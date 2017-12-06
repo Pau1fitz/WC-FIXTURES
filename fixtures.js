@@ -2,6 +2,8 @@ let fs = require('fs');
 let readline = require('readline');
 let google = require('googleapis');
 let googleAuth = require('google-auth-library');
+let writeJsonFile = require('write-json-file');
+
 
 // If modifying these scopes, delete your previously saved credentials
 // at ~/.credentials/calendar-nodejs-quickstart.json
@@ -101,6 +103,8 @@ function storeToken(token) {
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
  */
 function listEvents(auth) {
+
+  let data = [];
   let calendar = google.calendar('v3');
   calendar.calendarList.list({
     auth: auth,
@@ -124,7 +128,7 @@ function listEvents(auth) {
           auth: auth,
           calendarId: events[i].id,
           timeMin: (new Date('2017/05/01')).toISOString(),
-          maxResults: 1000,
+          maxResults: 2500,
           singleEvents: true,
           orderBy: 'startTime'
         }, function(err, response) {
@@ -133,19 +137,44 @@ function listEvents(auth) {
             return;
           }
           let events = response.items;
-          console.log(events[i].organizer.displayName)
+          let teamName = events[i].organizer.displayName
+          let team = {
+            teamName,
+            events: []
+          };
+
           if (events.length == 0) {
             console.log('No upcoming events found.');
           } else if(events[i].organizer.displayName && events[i].organizer.displayName.length > 0){
             for (let i = 0; i < events.length; i++) {
               if(events[i].organizer.displayName && events[i].organizer.displayName.length > 0) {
+
                 let event = events[i];
+
+                let game = event.summary;
+
                 let start = event.start.dateTime || event.start.date;
-                console.log('%s - %s', start, event.summary);
+
+                let opponent = event.summary.split('-').filter(team => !team.includes(teamName))[0].replace(/ *\([^)]*\) */g, '');
+
+                let home_or_away = event.summary.split('-')[0].includes(teamName) ? 'home' : 'away';
+
+                let score = game.includes('(') ? game.split(' ').slice(-1)[0].replace(/\(|\)/g,'') : '';
+
+                team.events.push({
+                  game,
+                  start,
+                  opponent,
+                  home_or_away,
+                  score
+                });
+                data.push(team);
+                // console.log(data);
               }
             }
           }
         });
+
       }
     }
   });
