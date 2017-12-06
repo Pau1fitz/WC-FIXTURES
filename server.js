@@ -4,6 +4,8 @@ var request = require('request');
 var cheerio = require('cheerio');
 var app = express();
 
+var download = require('image-downloader')
+
 
 var MongoClient = require('mongodb').MongoClient;
 
@@ -17,74 +19,95 @@ app.get('/scrape', function(){
      if(!error){
        var $ = cheerio.load(body);
        let table = [];
-       $('.standings').filter(() => {
-         var data = $(this);
-         $('.team-names').each(function(i, elm) {
-           var obj = {};
-           obj.team = $(this).text();
-           table[i] = obj;
-         });
 
-         $('.standings-row > td:nth-child(2)').each(function(i, elm) {
-           table[i].gamesPlayed = $(this).text();
-         });
+       var data = $('.standings');
 
-         $('.standings-row > td:nth-child(3)').each(function(i, elm) {
-           table[i].won = $(this).text();
-         });
-
-         $('.standings-row > td:nth-child(3)').each(function(i, elm) {
-            table[i].draw = $(this).text();
-         });
-
-         $('.standings-row > td:nth-child(3)').each(function(i, elm) {
-            table[i].lost = $(this).text();
-         });
-
-        $('.standings-row > td:nth-last-child(2)').each(function(i, elm) {
-            table[i].goalDiff = $(this).text();
-        });
-
-         $('.standings-row > td:last-child').each(function(i, elm) {
-            table[i].points = $(this).text();
-         });
-
-         for(var i = 0; i < table.length; i++) {
-           let name = table[i].team;
-           let gamesPlayed = table[i].gamesPlayed;
-           let won = table[i].won;
-           let draw = table[i].draw;
-           let lost = table[i].lost;
-           let goalDiff = table[i].goalDiff;
-           let points = table[i].points;
-
-           // INSERT FIXTURES INTO THE DATABASE
-
-           MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
-             if (err) throw err;
-             var myobj = {
-               name,
-               gamesPlayed,
-               won,
-               draw,
-               lost,
-               goalDiff,
-               points
-             };
-
-             db.collection('table').insertOne(myobj, function(err, res) {
-               if (err) throw err;
-               console.log("1 document inserted");
-               db.close();
-             });
-           });
-         }
+       $('.team-names').each(function(i, elm) {
+         var obj = {};
+         obj.team = $(this).text();
+         table[i] = obj;
        });
+
+       $('.standings-row > td:nth-child(2)').each(function(i, elm) {
+         table[i].gamesPlayed = $(this).text();
+       });
+
+       $('.standings-row > td:nth-child(3)').each(function(i, elm) {
+         table[i].won = $(this).text();
+       });
+
+       $('.standings-row > td:nth-child(3)').each(function(i, elm) {
+          table[i].draw = $(this).text();
+       });
+
+       $('.standings-row > td:nth-child(3)').each(function(i, elm) {
+          table[i].lost = $(this).text();
+       });
+
+      $('.standings-row > td:nth-last-child(2)').each(function(i, elm) {
+          table[i].goalDiff = $(this).text();
+      });
+
+       $('.standings-row > td:last-child').each(function(i, elm) {
+          table[i].points = $(this).text();
+       });
+
+       for(var i = 0; i < table.length; i++) {
+         let name = table[i].team;
+         let gamesPlayed = table[i].gamesPlayed;
+         let won = table[i].won;
+         let draw = table[i].draw;
+         let lost = table[i].lost;
+         let goalDiff = table[i].goalDiff;
+         let points = table[i].points;
+
+         // INSERT FIXTURES INTO THE DATABASE
+         //
+         // MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
+         //   if (err) throw err;
+         //   var myobj = {
+         //     name,
+         //     gamesPlayed,
+         //     won,
+         //     draw,
+         //     lost,
+         //     goalDiff,
+         //     points
+         //   };
+
+           // db.collection('table').insertOne(myobj, function(err, res) {
+           //   if (err) throw err;
+           //   console.log("1 document inserted");
+           //   db.close();
+           // });
+         // });
+       }
+
+			 // console.log(table);
+
      } else {
        console.log('error:', error); // Print the error if one occurred
      }
    });
 });
+
+app.get('/badges', function() {
+	// get logos
+	$('.team-logo').each(function(i, elm) {
+
+		const options = {
+			url: elm.attribs.src,
+			dest: `./images/${i}.png`
+		};
+
+		download.image(options)
+		.then(({ filename, image }) => {
+			console.log('File saved to', filename)
+		}).catch((err) => {
+			throw err
+		});
+	});
+})
 
 
 app.get('/table', function(){
