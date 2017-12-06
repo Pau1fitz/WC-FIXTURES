@@ -54,33 +54,33 @@ app.get('/scrape', function(){
 
        for(var i = 0; i < table.length; i++) {
          let name = table[i].team;
-         let gamesPlayed = table[i].gamesPlayed;
-         let won = table[i].won;
-         let draw = table[i].draw;
-         let lost = table[i].lost;
-         let goalDiff = table[i].goalDiff;
-         let points = table[i].points;
+         let gamesPlayed = parseInt(table[i].gamesPlayed);
+         let won = parseInt(table[i].won);
+         let draw = parseInt(table[i].draw);
+         let lost = parseInt(table[i].lost);
+         let goalDiff = parseInt(table[i].goalDiff);
+         let points = parseInt(table[i].points);
 
          // INSERT FIXTURES INTO THE DATABASE
-         //
-         // MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
-         //   if (err) throw err;
-         //   var myobj = {
-         //     name,
-         //     gamesPlayed,
-         //     won,
-         //     draw,
-         //     lost,
-         //     goalDiff,
-         //     points
-         //   };
 
-           // db.collection('table').insertOne(myobj, function(err, res) {
-           //   if (err) throw err;
-           //   console.log("1 document inserted");
-           //   db.close();
-           // });
-         // });
+         MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
+           if (err) throw err;
+           var myobj = {
+             name,
+             gamesPlayed,
+             won,
+             draw,
+             lost,
+             goalDiff,
+             points
+           };
+
+           db.collection('table').insertOne(myobj, function(err, res) {
+             if (err) throw err;
+             console.log("1 document inserted");
+             db.close();
+           });
+         });
        }
 
 			 // console.log(table);
@@ -110,13 +110,12 @@ app.get('/badges', function() {
 })
 
 
-app.get('/table', function(){
-
+app.get('/table', function(req, res){
   MongoClient.connect(url, function(err, db) {
   if (err) throw err;
-    db.collection("table").find({}).toArray(function(err, result) {
+    db.collection("table").find({}).sort({ "points": -1}).toArray(function(err, result) {
       if (err) throw err;
-      console.log(result);
+			res.json(result)
       db.close();
     });
   });
