@@ -36,11 +36,11 @@ app.get('/scrape', function(){
          table[i].won = $(this).text();
        });
 
-       $('.standings-row > td:nth-child(3)').each(function(i, elm) {
+       $('.standings-row > td:nth-child(4)').each(function(i, elm) {
           table[i].draw = $(this).text();
        });
 
-       $('.standings-row > td:nth-child(3)').each(function(i, elm) {
+       $('.standings-row > td:nth-child(5)').each(function(i, elm) {
           table[i].lost = $(this).text();
        });
 
