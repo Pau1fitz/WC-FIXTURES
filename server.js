@@ -9,21 +9,11 @@ var MongoClient = require('mongodb').MongoClient;
 
 var url = "mongodb://localhost:27017/premier_league"; // mydatabase is the name of db
 
-// MongoClient.connect(url, function(err, db) {
-//   if (err) throw err;
-//   var myobj = { name: "Company Inc", address: "Highway 37" };
-//   db.collection('teams').insertOne(myobj, function(err, res) {
-//     if (err) throw err;
-//     console.log("1 document inserted");
-//     db.close();
-//   });
-// });
-// app.get('/scrape', function(req, res){
+app.get('/scrape', function(){
 
+  let scrapeUrl = 'http://www.espn.co.uk/football/table/_/league/eng.1';
 
-  url = 'http://www.espn.co.uk/football/table/_/league/eng.1';
-
-  request(url, function (error, response, body) {
+  request(scrapeUrl, function (error, response, body) {
      if(!error){
        var $ = cheerio.load(body);
        let table = [];
@@ -59,11 +49,7 @@ var url = "mongodb://localhost:27017/premier_league"; // mydatabase is the name 
             table[i].points = $(this).text();
          });
 
-         console.log(table);
-
          for(var i = 0; i < table.length; i++) {
-
-           console.log(table[i].team)
            let name = table[i].team;
            let gamesPlayed = table[i].gamesPlayed;
            let won = table[i].won;
@@ -72,6 +58,7 @@ var url = "mongodb://localhost:27017/premier_league"; // mydatabase is the name 
            let goalDiff = table[i].goalDiff;
            let points = table[i].points;
 
+           // INSERT FIXTURES INTO THE DATABASE
 
            MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
              if (err) throw err;
@@ -84,25 +71,33 @@ var url = "mongodb://localhost:27017/premier_league"; // mydatabase is the name 
                goalDiff,
                points
              };
-             db.collection('teams').insertOne(myobj, function(err, res) {
+
+             db.collection('table').insertOne(myobj, function(err, res) {
                if (err) throw err;
                console.log("1 document inserted");
                db.close();
              });
            });
          }
-
-
        });
-
-
-
      } else {
        console.log('error:', error); // Print the error if one occurred
      }
    });
+});
 
-// });
+
+app.get('/table', function(){
+
+  MongoClient.connect(url, function(err, db) {
+  if (err) throw err;
+    db.collection("table").find({}).toArray(function(err, result) {
+      if (err) throw err;
+      console.log(result);
+      db.close();
+    });
+  });
+});
 
 app.listen('3000', () => {
   console.log('listening on port 3000');
