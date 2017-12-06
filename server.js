@@ -28,6 +28,10 @@ app.get('/scrape', function(){
          table[i] = obj;
        });
 
+			 $('.standings-row abbr').each(function(i, elm) {
+				 table[i].abbr = $(this).text();
+			 });
+
        $('.standings-row > td:nth-child(2)').each(function(i, elm) {
          table[i].gamesPlayed = $(this).text();
        });
@@ -54,6 +58,7 @@ app.get('/scrape', function(){
 
        for(var i = 0; i < table.length; i++) {
          let name = table[i].team;
+				 let abbr = table[i].abbr;
          let gamesPlayed = parseInt(table[i].gamesPlayed);
          let won = parseInt(table[i].won);
          let draw = parseInt(table[i].draw);
@@ -67,6 +72,7 @@ app.get('/scrape', function(){
            if (err) throw err;
            var myobj = {
              name,
+						 abbr,
              gamesPlayed,
              won,
              draw,
