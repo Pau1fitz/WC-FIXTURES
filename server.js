@@ -89,8 +89,6 @@ app.get('/scrape', function(){
          });
        }
 
-			 // console.log(table);
-
      } else {
        console.log('error:', error); // Print the error if one occurred
      }
