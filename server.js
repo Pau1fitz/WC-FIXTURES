@@ -4,9 +4,6 @@ var request = require('request');
 var cheerio = require('cheerio');
 var app = express();
 
-var download = require('image-downloader')
-
-
 var MongoClient = require('mongodb').MongoClient;
 
 var url = "mongodb://localhost:27017/premier_league"; // mydatabase is the name of db
@@ -95,6 +92,8 @@ app.get('/scrape', function(){
    });
 });
 
+
+// this route downloads the team logos
 app.get('/badges', function() {
 	// get logos
 	$('.team-logo').each(function(i, elm) {
@@ -118,6 +117,17 @@ app.get('/table', function(req, res){
   MongoClient.connect(url, function(err, db) {
   if (err) throw err;
     db.collection("table").find({}).sort({ "points": -1}).toArray(function(err, result) {
+      if (err) throw err;
+			res.json(result)
+      db.close();
+    });
+  });
+});
+
+app.get('/team/:teamName', function(req, res){
+  MongoClient.connect(url, function(err, db) {
+  if (err) throw err;
+    db.collection(req.params.teamName).find({}).sort({ "start": 1}).toArray(function(err, result) {
       if (err) throw err;
 			res.json(result)
       db.close();

@@ -4,6 +4,9 @@ let google = require('googleapis');
 let googleAuth = require('google-auth-library');
 let writeJsonFile = require('write-json-file');
 
+var MongoClient = require('mongodb').MongoClient;
+var url = "mongodb://localhost:27017/premier_league"; // mydatabase is the name of db
+
 
 // If modifying these scopes, delete your previously saved credentials
 // at ~/.credentials/calendar-nodejs-quickstart.json
@@ -119,60 +122,86 @@ function listEvents(auth) {
       return;
     }
     let events = response.items;
+
     if (events.length == 0) {
       console.log('No upcoming events found.');
     } else {
       console.log('Upcoming 10 events:');
+
       for (let i = 0; i < events.length; i++) {
         calendar.events.list({
           auth: auth,
           calendarId: events[i].id,
-          timeMin: (new Date('2017/05/01')).toISOString(),
+          timeMin: (new Date('2017/08/12')).toISOString(),
           maxResults: 2500,
           singleEvents: true,
           orderBy: 'startTime'
         }, function(err, response) {
+
           if (err) {
             console.log('The API returned an error: ' + err);
             return;
           }
+
           let events = response.items;
-          let teamName = events[i].organizer.displayName
+          var teamName = events[i].organizer.displayName
           let team = {
             teamName,
-            events: []
+            teamEvents: []
           };
 
           if (events.length == 0) {
+
             console.log('No upcoming events found.');
+
           } else if(events[i].organizer.displayName && events[i].organizer.displayName.length > 0){
+
             for (let i = 0; i < events.length; i++) {
-              if(events[i].organizer.displayName && events[i].organizer.displayName.length > 0) {
 
-                let event = events[i];
+              let event = events[i];
 
-                let game = event.summary;
+              let game = event.summary;
 
-                let start = event.start.dateTime || event.start.date;
+              let start = event.start.dateTime || event.start.date;
 
-                let opponent = event.summary.split('-').filter(team => !team.includes(teamName))[0].replace(/ *\([^)]*\) */g, '');
+              let opponent = event.summary.split('-').filter(team => !team.includes(teamName))[0].split('(')[0].trim();
 
-                let home_or_away = event.summary.split('-')[0].includes(teamName) ? 'home' : 'away';
+              let home_or_away = event.summary.split('-')[0].includes(teamName) ? 'home' : 'away';
 
-                let score = game.includes('(') ? game.split(' ').slice(-1)[0].replace(/\(|\)/g,'') : '';
+              let score = game.includes('(') ? game.split(' ').slice(-1)[0].replace(/\(|\)/g,'') : '';
 
-                team.events.push({
+              let winLossDraw;
+
+              if(score.split('-').length > 0) {
+                winLossDraw = home_or_away === 'home' && parseInt(score.split('-')[0]) > parseInt(score.split('-')[1]) ? 'win' :
+                  home_or_away === 'away' && parseInt(score.split('-')[1]) > parseInt(score.split('-')[0]) ? 'win' :
+                  parseInt(score.split('-')[1]) == parseInt(score.split('-')[0]) ? 'draw' : 'lost'
+              }
+
+
+              MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
+                if (err) throw err;
+
+                var obj = {
                   game,
                   start,
                   opponent,
                   home_or_away,
-                  score
+                  score,
+                  winLossDraw
+                };
+
+                db.collection(teamName.replace(/ /g,'').toLowerCase()).insertOne(obj, function(err, res) {
+                  if (err) throw err;
+                  console.log("1 document inserted");
+                  db.close();
                 });
-                data.push(team);
-                // console.log(data);
-              }
+              });
+
             }
+
           }
+
         });
 
       }
