@@ -10,7 +10,7 @@ var MongoClient = require('mongodb').MongoClient;
 
 var url = "mongodb://localhost:27017/premier_league"; // mydatabase is the name of db
 
-app.get('/scrape', function(){
+app.get('/scrapeTeam', function(){
 
   let scrapeUrl = 'http://www.espn.co.uk/football/table/_/league/eng.1';
 
@@ -94,6 +94,61 @@ app.get('/scrape', function(){
    });
 });
 
+app.get('/scrapeTopScorers', function(){
+
+  let scrapeUrl = 'http://www.bbc.co.uk/sport/football/premier-league/top-scorers';
+
+  request(scrapeUrl, function (error, response, body) {
+     if(!error){
+       var $ = cheerio.load(body);
+       let topScorers = [];
+
+       var data = $('.top-player-stats');
+
+       $('.top-player-stats__name').each(function(i, elm) {
+         var obj = {};
+         obj.player = $(this).text();
+         topScorers[i] = obj;
+       });
+
+      $('.top-player-stats__goals-scored-number').each(function(i, elm) {
+        topScorers[i].goals = $(this).text();
+      });
+
+			 $('.team-short-name').each(function(i, elm) {
+				 topScorers[i].team = $(this).text();
+			 });
+
+       for(var i = 0; i < topScorers.length; i++) {
+         let player = topScorers[i].player;
+         let goals = parseInt(topScorers[i].goals);
+				 let team = topScorers[i].team;
+
+
+         // INSERT FIXTURES INTO THE DATABASE
+
+         MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
+           if (err) throw err;
+           var myobj = {
+            player,
+            team,
+            goals
+           };
+
+           db.collection('topscorers').insertOne(myobj, function(err, res) {
+             if (err) throw err;
+             console.log("1 document inserted");
+             db.close();
+           });
+         });
+       }
+
+     } else {
+       console.log('error:', error); // Print the error if one occurred
+     }
+   });
+});
+
 
 // this route downloads the team logos
 app.get('/badges', function() {
@@ -125,6 +180,18 @@ app.get('/table', function(req, res){
     });
   });
 });
+
+app.get('/topscorers', function(req, res){
+  MongoClient.connect(url, function(err, db) {
+  if (err) throw err;
+    db.collection("topscorers").find({}).sort({ "goals": -1}).toArray(function(err, result) {
+      if (err) throw err;
+			res.json(result)
+      db.close();
+    });
+  });
+});
+
 
 // Get team name
 
