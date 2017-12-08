@@ -2,7 +2,9 @@ var express = require('express');
 var fs = require('fs');
 var request = require('request');
 var cheerio = require('cheerio');
+var cors = require('cors')
 var app = express();
+app.use(cors())
 
 var MongoClient = require('mongodb').MongoClient;
 
@@ -124,10 +126,38 @@ app.get('/table', function(req, res){
   });
 });
 
+// Get team name
+
 app.get('/team/:teamName', function(req, res){
   MongoClient.connect(url, function(err, db) {
   if (err) throw err;
     db.collection(req.params.teamName).find({}).sort({ "start": 1}).toArray(function(err, result) {
+      if (err) throw err;
+			res.json(result)
+      db.close();
+    });
+  });
+});
+
+// Get Next Games
+
+app.get('/nextgames/:teamName/:numGames', function(req, res){
+  MongoClient.connect(url, function(err, db) {
+  if (err) throw err;
+    db.collection(req.params.teamName).find({}).sort({ "score": 1}).limit(parseInt(req.params.numGames)).toArray(function(err, result) {
+      if (err) throw err;
+			res.json(result)
+      db.close();
+    });
+  });
+});
+
+// Get Previous Games
+
+app.get('/prevGames/:teamName/:numGames', function(req, res){
+  MongoClient.connect(url, function(err, db) {
+  if (err) throw err;
+    db.collection(req.params.teamName).find({}).sort({ "score": -1}).limit(parseInt(req.params.numGames)).toArray(function(err, result) {
       if (err) throw err;
 			res.json(result)
       db.close();

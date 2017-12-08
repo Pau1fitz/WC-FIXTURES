@@ -5,8 +5,7 @@ let googleAuth = require('google-auth-library');
 let writeJsonFile = require('write-json-file');
 
 var MongoClient = require('mongodb').MongoClient;
-var url = "mongodb://localhost:27017/premier_league"; // mydatabase is the name of db
-
+var url = "mongodb://localhost:27017/premier_league"; // premier league is the name of db
 
 // If modifying these scopes, delete your previously saved credentials
 // at ~/.credentials/calendar-nodejs-quickstart.json
@@ -175,9 +174,9 @@ function listEvents(auth) {
               if(score.split('-').length > 0) {
                 winLossDraw = home_or_away === 'home' && parseInt(score.split('-')[0]) > parseInt(score.split('-')[1]) ? 'win' :
                   home_or_away === 'away' && parseInt(score.split('-')[1]) > parseInt(score.split('-')[0]) ? 'win' :
-                  parseInt(score.split('-')[1]) == parseInt(score.split('-')[0]) ? 'draw' : 'lost'
+                  parseInt(score.split('-')[1]) == parseInt(score.split('-')[0]) ? 'draw' :
+                  score.split('-').length == 1 ? '' : 'lost'
               }
-
 
               MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
                 if (err) throw err;
@@ -197,13 +196,9 @@ function listEvents(auth) {
                   db.close();
                 });
               });
-
             }
-
           }
-
         });
-
       }
     }
   });
