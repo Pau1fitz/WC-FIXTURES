@@ -14,7 +14,6 @@
     "express": "^4.16.2",
     "googleapis": "^23.0.0",
     "mongodb": "2.2.33",
-    "request": "^2.83.0",
-    "write-json-file": "^2.3.0"
+    "request": "^2.83.0"
   }
 }

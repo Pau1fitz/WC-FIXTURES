@@ -10,7 +10,7 @@ var MongoClient = require('mongodb').MongoClient;
 
 var url = "mongodb://localhost:27017/premier_league"; // mydatabase is the name of db
 
-app.get('/scrapeTeam', function(){
+app.get('/scrapeTable', function(){
 
   let scrapeUrl = 'http://www.espn.co.uk/football/table/_/league/eng.1';
 
@@ -150,25 +150,61 @@ app.get('/scrapeTopScorers', function(){
 });
 
 
-// this route downloads the team logos
-app.get('/badges', function() {
-	// get logos
-	$('.team-logo').each(function(i, elm) {
 
-		const options = {
-			url: elm.attribs.src,
-			dest: `./images/${i}.png`
-		};
+app.get('/scrapeTopAssists', function(){
 
-		download.image(options)
-		.then(({ filename, image }) => {
-			console.log('File saved to', filename)
-		}).catch((err) => {
-			throw err
-		});
-	});
-})
+  let scrapeUrl = 'http://www.espnfc.co.uk/barclays-premier-league/23/statistics/assists';
 
+  request(scrapeUrl, function (error, response, body) {
+     if(!error){
+       var $ = cheerio.load(body);
+       let topAssists = [];
+
+       $("td[headers='player']").each(function(i, elm) {
+         var obj = {};
+         obj.player = $(this).text();
+         topAssists[i] = obj;
+       });
+
+			 $("td[headers='team']").each(function(i, elm) {
+				 topAssists[i].team = $(this).text();
+			 });
+
+      $("td[headers='goals']").each(function(i, elm) {
+				console.log($(this).text())
+        topAssists[i].assists = $(this).text();
+      });
+
+       for(var i = 0; i < topAssists.length; i++) {
+         let player = topAssists[i].player;
+         let assists = parseInt(topAssists[i].assists);
+				 let team = topAssists[i].team;
+
+         // INSERT FIXTURES INTO THE DATABASE
+
+         MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
+           if (err) throw err;
+           var myobj = {
+            player,
+            assists,
+            team
+           };
+
+           db.collection('topassists').insertOne(myobj, function(err, res) {
+             if (err) throw err;
+             console.log("1 document inserted");
+             db.close();
+           });
+         });
+       }
+
+     } else {
+       console.log('error:', error); // Print the error if one occurred
+     }
+   });
+});
+
+// Get league table
 
 app.get('/table', function(req, res){
   MongoClient.connect(url, function(err, db) {
@@ -181,10 +217,25 @@ app.get('/table', function(req, res){
   });
 });
 
+// Get top scorers
+
 app.get('/topscorers', function(req, res){
   MongoClient.connect(url, function(err, db) {
   if (err) throw err;
     db.collection("topscorers").find({}).sort({ "goals": -1}).toArray(function(err, result) {
+      if (err) throw err;
+			res.json(result)
+      db.close();
+    });
+  });
+});
+
+// Get top assists
+
+app.get('/topassists', function(req, res){
+  MongoClient.connect(url, function(err, db) {
+  if (err) throw err;
+    db.collection("topassists").find({}).sort({ "assists": -1}).toArray(function(err, result) {
       if (err) throw err;
 			res.json(result)
       db.close();
