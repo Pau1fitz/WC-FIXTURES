@@ -4,7 +4,7 @@ var request = require('request');
 var cheerio = require('cheerio');
 var cors = require('cors')
 var app = express();
-app.use(cors())
+app.use(cors());
 
 var MongoClient = require('mongodb').MongoClient;
 
@@ -148,8 +148,6 @@ app.get('/scrapeTopScorers', function(){
      }
    });
 });
-
-
 
 app.get('/scrapeTopAssists', function(){
 
