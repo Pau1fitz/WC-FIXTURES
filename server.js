@@ -6,9 +6,13 @@ var cors = require('cors')
 var app = express();
 app.use(cors());
 
+const PORT = process.env.PORT || 5000;
+
 var MongoClient = require('mongodb').MongoClient;
 
-var url = "mongodb://localhost:27017/premier_league"; // mydatabase is the name of db
+// var url = "mongodb://localhost:27017/premier_league";
+var url = "mongodb://paulfitz:123456789@ds135866.mlab.com:35866/premier-league";
+
 
 app.get('/scrapeTable', function(){
 
@@ -67,7 +71,7 @@ app.get('/scrapeTable', function(){
 
          // INSERT FIXTURES INTO THE DATABASE
 
-         MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
+         MongoClient.connect(url, function(err, db) {
            if (err) throw err;
            var myobj = {
              name,
@@ -188,7 +192,7 @@ app.get('/scrapeTopAssists', function(){
             team
            };
 
-           db.collection('topassists').insertOne(myobj, function(err, res) {
+           db.collection('topassists').replaceOne({}, myobj, {upsert: true}, function(err, res) {
              if (err) throw err;
              console.log("1 document inserted");
              db.close();
@@ -281,6 +285,6 @@ app.get('/prevGames/:teamName/:numGames', function(req, res){
   });
 });
 
-app.listen('3000', () => {
-  console.log('listening on port 3000');
+app.listen(PORT, () => {
+  console.log(`listening on port ${PORT}`);
 });
