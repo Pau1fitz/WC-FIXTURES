@@ -131,7 +131,7 @@ app.get('/scrapeTopScorers', function(){
 
          // INSERT FIXTURES INTO THE DATABASE
 
-         MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
+         MongoClient.connect(url, function(err, db) {
            if (err) throw err;
            var myobj = {
             player,
@@ -184,7 +184,7 @@ app.get('/scrapeTopAssists', function(){
 
          // INSERT FIXTURES INTO THE DATABASE
 
-         MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
+         MongoClient.connect(url, function(err, db) {
            if (err) throw err;
            var myobj = {
             player,
@@ -192,7 +192,7 @@ app.get('/scrapeTopAssists', function(){
             team
            };
 
-           db.collection('topassists').replaceOne({}, myobj, {upsert: true}, function(err, res) {
+           db.collection('topassists').insertOne({}, myobj, {upsert: true}, function(err, res) {
              if (err) throw err;
              console.log("1 document inserted");
              db.close();
