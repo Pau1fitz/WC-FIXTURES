@@ -281,7 +281,7 @@ app.get('/prevGames/:teamName/:numGames?', function(req, res){
   MongoClient.connect(url, function(err, db) {
   if (err) throw err;
 		let numGames = parseInt(req.params.numGames) || 100;
-    db.collection(req.params.teamName).find({score: {$type: 2}, $where: "this.score.length > 0"}).sort({"start": 1}).limit(numGames).toArray(function(err, result) {
+    db.collection(req.params.teamName).find({score: {$type: 2}, $where: "this.score.length > 0"}).sort({"start": -1}).limit(numGames).toArray(function(err, result) {
       if (err) throw err;
 			res.json(result)
       db.close();
