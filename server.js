@@ -6,13 +6,14 @@ var cors = require('cors')
 var app = express();
 app.use(cors());
 
+var imageChecker  = require('./imageChecker');
+
 const PORT = process.env.PORT || 5000;
 
 var MongoClient = require('mongodb').MongoClient;
 
 // var url = "mongodb://localhost:27017/premier_league";
 var url = "mongodb://paulfitz:123456789@ds135866.mlab.com:35866/premier-league";
-
 
 app.get('/scrapeTable', function(){
 
@@ -127,7 +128,7 @@ app.get('/scrapeTopScorers', function(){
          let player = topScorers[i].player;
          let goals = parseInt(topScorers[i].goals);
 				 let team = topScorers[i].team;
-
+				 let abbr = imageChecker.imageChecker(team);
 
          // INSERT FIXTURES INTO THE DATABASE
 
@@ -136,7 +137,8 @@ app.get('/scrapeTopScorers', function(){
            var myobj = {
             player,
             team,
-            goals
+            goals,
+						abbr
            };
 
            db.collection('topscorers').insertOne(myobj, function(err, res) {
@@ -173,7 +175,6 @@ app.get('/scrapeTopAssists', function(){
 			 });
 
       $("td[headers='goals']").each(function(i, elm) {
-				console.log($(this).text())
         topAssists[i].assists = $(this).text();
       });
 
@@ -181,6 +182,7 @@ app.get('/scrapeTopAssists', function(){
          let player = topAssists[i].player;
          let assists = parseInt(topAssists[i].assists);
 				 let team = topAssists[i].team;
+ 				 let abbr = imageChecker.imageChecker(team);
 
          // INSERT FIXTURES INTO THE DATABASE
 
@@ -189,10 +191,11 @@ app.get('/scrapeTopAssists', function(){
            var myobj = {
             player,
             assists,
-            team
+            team,
+						abbr
            };
 
-           db.collection('topassists').insertOne({}, myobj, {upsert: true}, function(err, res) {
+           db.collection('topassists').insertOne(myobj, function(err, res) {
              if (err) throw err;
              console.log("1 document inserted");
              db.close();
@@ -261,10 +264,10 @@ app.get('/team/:teamName', function(req, res){
 
 // Get Next Games
 
-app.get('/nextgames/:teamName/:numGames', function(req, res){
+app.get('/nextgames/:teamName/:numGames?', function(req, res){
   MongoClient.connect(url, function(err, db) {
   if (err) throw err;
-    db.collection(req.params.teamName).find({}).sort({ "score": 1}).limit(parseInt(req.params.numGames)).toArray(function(err, result) {
+    db.collection(req.params.teamName).find({score: {$type: 2}, $where: "this.score.length == 0"}).sort({ "start": 1}).limit(parseInt(req.params.numGames)).toArray(function(err, result) {
       if (err) throw err;
 			res.json(result)
       db.close();
@@ -274,10 +277,11 @@ app.get('/nextgames/:teamName/:numGames', function(req, res){
 
 // Get Previous Games
 
-app.get('/prevGames/:teamName/:numGames', function(req, res){
+app.get('/prevGames/:teamName/:numGames?', function(req, res){
   MongoClient.connect(url, function(err, db) {
   if (err) throw err;
-    db.collection(req.params.teamName).find({}).sort({ "score": -1}).limit(parseInt(req.params.numGames)).toArray(function(err, result) {
+		let numGames = parseInt(req.params.numGames) || 100;
+    db.collection(req.params.teamName).find({score: {$type: 2}, $where: "this.score.length > 0"}).sort({"start": 1}).limit(numGames).toArray(function(err, result) {
       if (err) throw err;
 			res.json(result)
       db.close();

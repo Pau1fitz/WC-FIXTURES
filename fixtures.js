@@ -3,9 +3,11 @@ let readline = require('readline');
 let google = require('googleapis');
 let googleAuth = require('google-auth-library');
 let writeJsonFile = require('write-json-file');
+var imageChecker  = require('./imageChecker');
 
 var MongoClient = require('mongodb').MongoClient;
-var url = "mongodb://localhost:27017/premier_league"; // premier league is the name of db
+// var url = "mongodb://localhost:27017/premier_league"; // premier league is the name of db
+var url = "mongodb://paulfitz:123456789@ds135866.mlab.com:35866/premier-league";
 
 // If modifying these scopes, delete your previously saved credentials
 // at ~/.credentials/calendar-nodejs-quickstart.json
@@ -132,7 +134,7 @@ function listEvents(auth) {
         calendar.events.list({
           auth: auth,
           calendarId: events[i].id,
-          timeMin: (new Date('2017/08/12')).toISOString(),
+          timeMin: (new Date('2017/06/12')).toISOString(),
           maxResults: 2500,
           singleEvents: true,
           orderBy: 'startTime'
@@ -144,7 +146,7 @@ function listEvents(auth) {
           }
 
           let events = response.items;
-          var teamName = events[i].organizer.displayName
+          var teamName = events[i].organizer.displayName;
           let team = {
             teamName,
             teamEvents: []
@@ -161,6 +163,10 @@ function listEvents(auth) {
               let event = events[i];
 
               let game = event.summary;
+					
+							if(game.includes('[')){
+								continue;
+							}
 
               let start = event.start.dateTime || event.start.date;
 
@@ -173,25 +179,30 @@ function listEvents(auth) {
               let winLossDraw;
 
               if(score.split('-').length > 0) {
-                winLossDraw = home_or_away === 'home' && parseInt(score.split('-')[0]) > parseInt(score.split('-')[1]) ? 'win' :
-                  home_or_away === 'away' && parseInt(score.split('-')[1]) > parseInt(score.split('-')[0]) ? 'win' :
+                winLossDraw = home_or_away === 'home' && parseInt(score.split('-')[0]) > parseInt(score.split('-')[1]) ? 'won' :
+                  home_or_away === 'away' && parseInt(score.split('-')[1]) > parseInt(score.split('-')[0]) ? 'won' :
                   parseInt(score.split('-')[1]) == parseInt(score.split('-')[0]) ? 'draw' :
                   score.split('-').length == 1 ? '' : 'lost'
               }
 
-              MongoClient.connect( "mongodb://localhost:27017/premier_league", function(err, db) {
+							let abbr = imageChecker.imageChecker(opponent);
+
+              MongoClient.connect(url, function(err, db) {
                 if (err) throw err;
 
                 var obj = {
                   game,
                   start,
                   opponent,
+									abbr,
                   home_or_away,
                   score,
                   winLossDraw
                 };
 
-                db.collection(teamName.replace(/ /g,'').toLowerCase()).insertOne(obj, function(err, res) {
+								let dbName = imageChecker.imageChecker(teamName);
+
+                db.collection(dbName.trim()).insertOne(obj, function(err, res) {
                   if (err) throw err;
                   console.log("1 document inserted");
                   db.close();
