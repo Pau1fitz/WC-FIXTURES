@@ -163,7 +163,7 @@ function listEvents(auth) {
               let event = events[i];
 
               let game = event.summary;
-					
+
 							if(game.includes('[')){
 								continue;
 							}

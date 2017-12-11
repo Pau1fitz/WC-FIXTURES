@@ -222,6 +222,19 @@ app.get('/table', function(req, res){
   });
 });
 
+// Get teams
+
+app.get('/teams', function(req, res){
+  MongoClient.connect(url, function(err, db) {
+  if (err) throw err;
+    db.collection("teams").find({}).sort({ "abbr": 1}).toArray(function(err, result) {
+      if (err) throw err;
+			res.json(result)
+      db.close();
+    });
+  });
+});
+
 // Get top scorers
 
 app.get('/topscorers', function(req, res){
