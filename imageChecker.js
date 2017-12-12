@@ -73,7 +73,7 @@ let teams = [
 	},
 	{
 		abbr: 'WBA',
-		names: ['West Bromwich Albion', 'WBA']
+		names: ['West Bromwich', 'West Bromwich Albion', 'WBA']
 	},
 	{
 		abbr: 'WHU',
