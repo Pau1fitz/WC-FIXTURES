@@ -85,7 +85,7 @@ app.get('/scrapeTable', function(){
              points
            };
 
-           db.collection('table').insertOne(myobj, function(err, res) {
+           db.collection('table').updateOne({}, myobj, { upsert: true } , function(err, res) {
              if (err) throw err;
              console.log("1 document inserted");
              db.close();
