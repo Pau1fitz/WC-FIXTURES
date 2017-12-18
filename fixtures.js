@@ -11,10 +11,20 @@ var MongoClient = require('mongodb').MongoClient;
 // var url = "mongodb://localhost:27017/premier_league"; // premier league is the name of db
 var url = "mongodb://paulfitz:123456789@ds135866.mlab.com:35866/premier-league";
 
-db.collection('table').insertOne( myobj, function(err, res) {
-	if (err) throw err;
-	console.log("1 document inserted");
-	db.close();
+// make client connect to mongo service
+MongoClient.connect(url, function(err, db) {
+    if (err) throw err;
+    console.log("Connected to Database!");
+    // print database name
+    console.log("db object points to the database : "+ db.databaseName);
+    // delete the database
+    db.dropDatabase(function(err, result){
+        console.log("Error : "+err);
+        if (err) throw err;
+        console.log("Operation Success ? "+result);
+        // after all the operations with db, close it.
+        db.close();
+    });
 });
 
 // If modifying these scopes, delete your previously saved credentials
