@@ -169,6 +169,27 @@ function listEvents(auth) {
             teamEvents: []
           };
 
+					MongoClient.connect(url, function(err, db) {
+
+						let abbr = imageChecker.imageChecker(teamName);
+
+						let obj = {
+							abbr,
+							name: teamName
+						};
+
+						if (err) throw err;
+
+						if(abbr) {
+							db.collection('teams').insertOne(obj, function(err, res) {
+								if (err) throw err;
+								console.log("1 document inserted");
+								db.close();
+							});
+						}
+
+					});
+
           if (events.length == 0) {
 
             console.log('No upcoming events found.');
