@@ -360,7 +360,7 @@ request(newsUrl, function (error, response, body) {
 		 for(var i = 0; i < headlines.length; i++) {
 			 let headline = headlines[i].headline;
 			 let snippet = headlines[i].snippet;
-	 		 let image = headlines[i].image;
+	 		 let image = headlines[i].image.replace(/[&\#{}]/g,'');
 
 			 MongoClient.connect(url, function(err, db) {
 				 if (err) throw err;
