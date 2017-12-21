@@ -222,6 +222,20 @@ app.get('/table', function(req, res){
   });
 });
 
+
+// Get headlines
+
+app.get('/headlines', function(req, res){
+  MongoClient.connect(url, function(err, db) {
+  if (err) throw err;
+    db.collection("table").find({}).toArray(function(err, result) {
+      if (err) throw err;
+			res.json(result)
+      db.close();
+    });
+  });
+});
+
 // Get teams
 
 app.get('/teams', function(req, res){
