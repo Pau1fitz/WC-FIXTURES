@@ -336,6 +336,53 @@ request(scrapeUrlTwo, function (error, response, body) {
    }
  });
 
+let newsUrl = 'http://www.skysports.com/football/news';
+
+request(newsUrl, function (error, response, body) {
+  if(!error){
+    var $ = cheerio.load(body);
+    let headlines = [];
+
+    $('.news-list__headline').each(function(i, elm) {
+      var obj = {};
+      obj.headline = $(this).text().trim();
+      headlines[i] = obj;
+    });
+
+		 $('.news-list__snippet').each(function(i, elm) {
+			 headlines[i].snippet = $(this).text();
+		 });
+
+		 $('.news-list__image').each(function(i, elm) {
+			 headlines[i].image = $(this).attr('data-src');;
+		 });
+
+		 for(var i = 0; i < headlines.length; i++) {
+			 let headline = headlines[i].headline;
+			 let snippet = headlines[i].snippet;
+	 		 let image = headlines[i].image;
+
+			 MongoClient.connect(url, function(err, db) {
+				 if (err) throw err;
+
+				 var myobj = {
+					 headline,
+					 snippet,
+					 image
+				 };
+
+				 db.collection('headlines').insertOne(myobj, function(err, res) {
+					 if (err) throw err;
+					 console.log("1 document inserted");
+					 db.close();
+				 });
+			 });
+		 }
+
+  } else {
+    console.log('error:', error); // Print the error if one occurred
+  }
+});
 
 let scrapeUrlThree = 'http://www.bbc.co.uk/sport/football/premier-league/top-scorers';
 
