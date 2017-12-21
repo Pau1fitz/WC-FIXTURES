@@ -228,7 +228,7 @@ app.get('/table', function(req, res){
 app.get('/headlines', function(req, res){
   MongoClient.connect(url, function(err, db) {
   if (err) throw err;
-    db.collection("table").find({}).toArray(function(err, result) {
+    db.collection("headlines").find({}).toArray(function(err, result) {
       if (err) throw err;
 			res.json(result)
       db.close();
