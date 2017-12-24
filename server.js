@@ -291,7 +291,7 @@ app.get('/team/:teamName', function(req, res){
 
 // Get Next Games
 
-app.get('/nextgames/:teamName/:numGames?', function(req, res){
+app.get('/nextGames/:teamName/:numGames?', function(req, res){
   MongoClient.connect(url, function(err, db) {
   if (err) throw err;
     db.collection(req.params.teamName).find({score: {$type: 2}, $where: "this.score.length == 0"}).sort({ "start": 1}).limit(parseInt(req.params.numGames)).toArray(function(err, result) {
