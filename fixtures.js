@@ -22,7 +22,7 @@ MongoClient.connect(url, function(err, db) {
         if (err) throw err;
         console.log("Operation Success ? "+result);
         // after all the operations with db, close it.
-        db.close();
+        // db.close();
     });
 });
 
@@ -32,7 +32,7 @@ let SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
 let TOKEN_DIR = (process.env.HOME || process.env.HOMEPATH ||
     process.env.USERPROFILE) + '/.credentials/';
 let TOKEN_PATH = TOKEN_DIR + 'calendar-nodejs-quickstart.json';
-console.log(TOKEN_PATH)
+
 
 // Load client secrets from a local file.
 fs.readFile('client_secret.json', function processClientSecrets(err, content) {
@@ -140,14 +140,14 @@ function listEvents(auth) {
       console.log('The API returned an error: ' + err);
       return;
     }
+
     let events = response.items;
 
     if (events.length == 0) {
       console.log('No upcoming events found.');
     } else {
-      console.log('Upcoming 10 events:');
-
       for (let i = 0; i < events.length; i++) {
+
         calendar.events.list({
           auth: auth,
           calendarId: events[i].id,
@@ -163,7 +163,9 @@ function listEvents(auth) {
           }
 
           let events = response.items;
+
           var teamName = events[i].organizer.displayName;
+
           let team = {
             teamName,
             teamEvents: []
@@ -187,7 +189,6 @@ function listEvents(auth) {
 								db.close();
 							});
 						}
-
 					});
 
           if (events.length == 0) {
@@ -196,6 +197,8 @@ function listEvents(auth) {
 
           } else if(events[i].organizer.displayName && events[i].organizer.displayName.length > 0){
 
+
+	          MongoClient.connect(url, function(err, db) {
             for (let i = 0; i < events.length; i++) {
 
               let event = events[i];
@@ -225,7 +228,7 @@ function listEvents(auth) {
 
 							let abbr = imageChecker.imageChecker(opponent);
 
-              MongoClient.connect(url, function(err, db) {
+              // MongoClient.connect(url, function(err, db) {
                 if (err) throw err;
 
                 var obj = {
@@ -243,10 +246,11 @@ function listEvents(auth) {
                 db.collection(dbName.trim()).insertOne(obj, function(err, res) {
                   if (err) throw err;
                   console.log("1 document inserted");
-                  db.close();
+
                 });
-              });
-            }
+							}
+							db.close();
+            });
           }
         });
       }
@@ -326,7 +330,7 @@ request(scrapeUrlTwo, function (error, response, body) {
          db.collection('table').insertOne( myobj, function(err, res) {
            if (err) throw err;
            console.log("1 document inserted");
-           db.close();
+           // db.close();
          });
        });
      }
@@ -374,7 +378,7 @@ request(newsUrl, function (error, response, body) {
 				 db.collection('headlines').insertOne(myobj, function(err, res) {
 					 if (err) throw err;
 					 console.log("1 document inserted");
-					 db.close();
+					 // db.close();
 				 });
 			 });
 		 }
@@ -427,7 +431,7 @@ request(scrapeUrlThree, function (error, response, body) {
        db.collection('topscorers').insertOne(myobj, function(err, res) {
          if (err) throw err;
          console.log("1 document inserted");
-         db.close();
+         // db.close();
        });
      });
    }
