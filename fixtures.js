@@ -8,7 +8,6 @@ const request = require('request');
 const cheerio = require('cheerio');
 const MongoClient = require('mongodb').MongoClient;
 
-// var url = "mongodb://localhost:27017/premier_league"; // premier league is the name of db
 const url = "mongodb://paulfitz:123456789a@ds016098.mlab.com:16098/world-cup";
 
 MongoClient.connect(url, function(err, db) {
@@ -116,11 +115,6 @@ function storeToken(token) {
   console.log('Token stored to ' + TOKEN_PATH);
 }
 
-/**
- * Lists the next 10 events on the user's primary calendar.
- *
- * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
- */
 function getFixtures(auth) {
   let calendar = google.calendar('v3');
   calendar.events.list({
@@ -137,7 +131,7 @@ function getFixtures(auth) {
       return;
     }
 
-    let fixtures = response.items;
+    const fixtures = response.items;
   
     fixtures.forEach((f,i) => {
       let group = f.summary.replace( /(^.*\[|\].*$)/g, '' );

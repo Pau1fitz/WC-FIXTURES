@@ -6,98 +6,9 @@ var cors = require('cors')
 var app = express();
 app.use(cors());
 
-var imageChecker  = require('./imageChecker');
-
 const PORT = process.env.PORT || 5000;
-
 var MongoClient = require('mongodb').MongoClient;
-
-// var url = "mongodb://localhost:27017/premier_league";
-var url = "mongodb://paulfitz:123456789@ds135866.mlab.com:35866/premier-league";
-
-app.get('/scrapeTable', function(){
-
-  let scrapeUrl = 'http://www.espn.co.uk/football/table/_/league/eng.1';
-
-  request(scrapeUrl, function (error, response, body) {
-     if(!error){
-       var $ = cheerio.load(body);
-       let table = [];
-
-       var data = $('.standings');
-
-       $('.team-names').each(function(i, elm) {
-         var obj = {};
-         obj.team = $(this).text();
-         table[i] = obj;
-       });
-
-			 $('.standings-row abbr').each(function(i, elm) {
-				 table[i].abbr = $(this).text();
-			 });
-
-       $('.standings-row > td:nth-child(2)').each(function(i, elm) {
-         table[i].gamesPlayed = $(this).text();
-       });
-
-       $('.standings-row > td:nth-child(3)').each(function(i, elm) {
-         table[i].won = $(this).text();
-       });
-
-       $('.standings-row > td:nth-child(4)').each(function(i, elm) {
-          table[i].draw = $(this).text();
-       });
-
-       $('.standings-row > td:nth-child(5)').each(function(i, elm) {
-          table[i].lost = $(this).text();
-       });
-
-      $('.standings-row > td:nth-last-child(2)').each(function(i, elm) {
-          table[i].goalDiff = $(this).text();
-      });
-
-       $('.standings-row > td:last-child').each(function(i, elm) {
-          table[i].points = $(this).text();
-       });
-
-       for(var i = 0; i < table.length; i++) {
-         let name = table[i].team;
-				 let abbr = table[i].abbr;
-         let gamesPlayed = parseInt(table[i].gamesPlayed);
-         let won = parseInt(table[i].won);
-         let draw = parseInt(table[i].draw);
-         let lost = parseInt(table[i].lost);
-         let goalDiff = parseInt(table[i].goalDiff);
-         let points = parseInt(table[i].points);
-
-         // INSERT FIXTURES INTO THE DATABASE
-
-         MongoClient.connect(url, function(err, db) {
-           if (err) throw err;
-           var myobj = {
-             name,
-						 abbr,
-             gamesPlayed,
-             won,
-             draw,
-             lost,
-             goalDiff,
-             points
-           };
-
-           db.collection('table').updateOne({}, myobj, { upsert: true } , function(err, res) {
-             if (err) throw err;
-             console.log("1 document inserted");
-             db.close();
-           });
-         });
-       }
-
-     } else {
-       console.log('error:', error); // Print the error if one occurred
-     }
-   });
-});
+const url = 'mongodb://paulfitz:123456789a@ds016098.mlab.com:16098/world-cup';
 
 app.get('/scrapeTopScorers', function(){
 
@@ -155,66 +66,11 @@ app.get('/scrapeTopScorers', function(){
    });
 });
 
-app.get('/scrapeTopAssists', function(){
-
-  let scrapeUrl = 'http://www.espnfc.co.uk/barclays-premier-league/23/statistics/assists';
-
-  request(scrapeUrl, function (error, response, body) {
-     if(!error){
-       var $ = cheerio.load(body);
-       let topAssists = [];
-
-       $("td[headers='player']").each(function(i, elm) {
-         var obj = {};
-         obj.player = $(this).text();
-         topAssists[i] = obj;
-       });
-
-			 $("td[headers='team']").each(function(i, elm) {
-				 topAssists[i].team = $(this).text();
-			 });
-
-      $("td[headers='goals']").each(function(i, elm) {
-        topAssists[i].assists = $(this).text();
-      });
-
-       for(var i = 0; i < topAssists.length; i++) {
-         let player = topAssists[i].player;
-         let assists = parseInt(topAssists[i].assists);
-				 let team = topAssists[i].team;
- 				 let abbr = imageChecker.imageChecker(team);
-
-         // INSERT FIXTURES INTO THE DATABASE
-
-         MongoClient.connect(url, function(err, db) {
-           if (err) throw err;
-           var myobj = {
-            player,
-            assists,
-            team,
-						abbr
-           };
-
-           db.collection('topassists').insertOne(myobj, function(err, res) {
-             if (err) throw err;
-             console.log("1 document inserted");
-             db.close();
-           });
-         });
-       }
-
-     } else {
-       console.log('error:', error); // Print the error if one occurred
-     }
-   });
-});
-
-// Get league table
-
-app.get('/table', function(req, res){
+// Get all fixtures
+app.get('/fixtures', function(req, res){
   MongoClient.connect(url, function(err, db) {
   if (err) throw err;
-    db.collection("table").find({}).sort({ "points": -1}).toArray(function(err, result) {
+    db.collection('fixtures').find({}).sort({'group': -1}).toArray(function(err, result) {
       if (err) throw err;
 			res.json(result)
       db.close();
@@ -222,9 +78,24 @@ app.get('/table', function(req, res){
   });
 });
 
+// Get group fixtures
+app.get('/group-fixtures', function(req, res){
+  MongoClient.connect(url, function(err, db) {
+  if (err) throw err;
+    db.collection('fixtures').find({}).sort({'group': 1}).toArray(function(err, result) {
+      if (err) throw err;
+        let groupFixtures = result.filter(r => {
+          return r.group.length === 1;
+        });
+        res.json(groupFixtures)
+        db.close();
+    });
+  });
+});
+
+
 
 // Get headlines
-
 app.get('/headlines', function(req, res){
   MongoClient.connect(url, function(err, db) {
   if (err) throw err;
