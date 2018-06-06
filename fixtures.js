@@ -9,7 +9,7 @@ var cheerio = require('cheerio');
 
 var MongoClient = require('mongodb').MongoClient;
 // var url = "mongodb://localhost:27017/premier_league"; // premier league is the name of db
-var url = "mongodb://paulfitz:123456789@ds135866.mlab.com:35866/premier-league";
+var url = "mongodb://paulfitz:123456789@ds016098.mlab.com:16098/world-cup";
 
 MongoClient.connect(url, function(err, db) {
     if (err) throw err;
@@ -145,17 +145,20 @@ function listEvents(auth) {
 
     if (events.length == 0) {
       console.log('No upcoming events found.');
-    } else {
+    } 
+    else {
       for (let i = 0; i < events.length; i++) {
 
         calendar.events.list({
           auth: auth,
           calendarId: events[i].id,
-          timeMin: (new Date('2017/06/12')).toISOString(),
+          timeMin: (new Date('2018/06/12')).toISOString(),
           maxResults: 2500,
           singleEvents: true,
           orderBy: 'startTime'
         }, function(err, response) {
+
+          console.log(response)
 
           if (err) {
             console.log('The API returned an error: ' + err);
@@ -164,330 +167,336 @@ function listEvents(auth) {
 
           let events = response.items;
 
-          var teamName = events[i].organizer.displayName;
-
-          let team = {
-            teamName,
-            teamEvents: []
-          };
-
-					MongoClient.connect(url, function(err, db) {
-
-						let abbr = imageChecker.imageChecker(teamName);
-
-						let obj = {
-							abbr,
-							name: teamName
-						};
-
-						if (err) throw err;
-
-						if(abbr) {
-							db.collection('teams').insertOne(obj, function(err, res) {
-								if (err) throw err;
-								console.log("1 document inserted");
-								db.close();
-							});
-						}
-					});
-
-          if (events.length == 0) {
-
-            console.log('No upcoming events found.');
-
-          } else if(events[i].organizer.displayName && events[i].organizer.displayName.length > 0){
-
-
-	          MongoClient.connect(url, function(err, db) {
-            for (let i = 0; i < events.length; i++) {
-
-              let event = events[i];
-
-              let game = event.summary;
-
-							if(game.includes('[')){
-								continue;
-							}
-
-              let start = event.start.dateTime || event.start.date;
-
-              let opponent = event.summary.split('-').filter(team => !team.includes(teamName))[0].split('(')[0].trim();
-
-              let home_or_away = event.summary.split('-')[0].includes(teamName) ? 'home' : 'away';
-
-              let score = game.includes('(') ? game.split(' ').slice(-1)[0].replace(/\(|\)/g,'') : '';
-
-              let winLossDraw;
-
-              if(score.split('-').length > 0) {
-                winLossDraw = home_or_away === 'home' && parseInt(score.split('-')[0]) > parseInt(score.split('-')[1]) ? 'won' :
-                  home_or_away === 'away' && parseInt(score.split('-')[1]) > parseInt(score.split('-')[0]) ? 'won' :
-                  parseInt(score.split('-')[1]) == parseInt(score.split('-')[0]) ? 'draw' :
-                  score.split('-').length == 1 ? '' : 'lost'
-              }
-
-							let abbr = imageChecker.imageChecker(opponent);
-
-              // MongoClient.connect(url, function(err, db) {
-                if (err) throw err;
-
-                var obj = {
-                  game,
-                  start,
-                  opponent,
-									abbr,
-                  home_or_away,
-                  score,
-                  winLossDraw
-                };
-
-								let dbName = imageChecker.imageChecker(teamName);
-
-                db.collection(dbName.trim()).insertOne(obj, function(err, res) {
-                  if (err) throw err;
-                  console.log("1 document inserted");
-
-                });
-							}
-							db.close();
-            });
-          }
         });
       }
     }
   });
 }
 
+          // var teamName = events[i].organizer.displayName;
 
-let scrapeUrlTwo = 'http://www.espn.co.uk/football/table/_/league/eng.1';
+          // let team = {
+          //   teamName,
+          //   teamEvents: []
+          // };
 
-request(scrapeUrlTwo, function (error, response, body) {
-   if(!error){
-     var $ = cheerio.load(body);
-     let table = [];
+					// MongoClient.connect(url, function(err, db) {
 
-     var data = $('.standings');
+					// 	let abbr = imageChecker.imageChecker(teamName);
 
-     $('.team-names').each(function(i, elm) {
-       var obj = {};
-       obj.team = $(this).text();
-       table[i] = obj;
-     });
+					// 	let obj = {
+					// 		abbr,
+					// 		name: teamName
+					// 	};
 
-		 $('.standings-row abbr').each(function(i, elm) {
-			 table[i].abbr = $(this).text();
-		 });
+					// 	if (err) throw err;
 
-     $('.standings-row > td:nth-child(2)').each(function(i, elm) {
-       table[i].gamesPlayed = $(this).text();
-     });
+					// 	if(abbr) {
+					// 		db.collection('teams').insertOne(obj, function(err, res) {
+					// 			if (err) throw err;
+					// 			console.log("1 document inserted");
+					// 			db.close();
+					// 		});
+					// 	}
+					// });
 
-     $('.standings-row > td:nth-child(3)').each(function(i, elm) {
-       table[i].won = $(this).text();
-     });
+          // if (events.length == 0) {
 
-     $('.standings-row > td:nth-child(4)').each(function(i, elm) {
-        table[i].draw = $(this).text();
-     });
+          //   console.log('No upcoming events found.');
 
-     $('.standings-row > td:nth-child(5)').each(function(i, elm) {
-        table[i].lost = $(this).text();
-     });
+          // } else if(events[i].organizer.displayName && events[i].organizer.displayName.length > 0){
 
-    $('.standings-row > td:nth-last-child(2)').each(function(i, elm) {
-        table[i].goalDiff = $(this).text();
-    });
 
-     $('.standings-row > td:last-child').each(function(i, elm) {
-        table[i].points = $(this).text();
-     });
+	          // MongoClient.connect(url, function(err, db) {
+            // for (let i = 0; i < events.length; i++) {
 
-     for(var i = 0; i < table.length; i++) {
-       let name = table[i].team;
-			 let abbr = table[i].abbr;
-       let gamesPlayed = parseInt(table[i].gamesPlayed);
-       let won = parseInt(table[i].won);
-       let draw = parseInt(table[i].draw);
-       let lost = parseInt(table[i].lost);
-       let goalDiff = parseInt(table[i].goalDiff);
-       let points = parseInt(table[i].points);
+            //   let event = events[i];
 
-       // INSERT FIXTURES INTO THE DATABASE
+            //   let game = event.summary;
 
-       MongoClient.connect(url, function(err, db) {
-         if (err) throw err;
-         var myobj = {
-           name,
-					 abbr,
-           gamesPlayed,
-           won,
-           draw,
-           lost,
-           goalDiff,
-           points
-         };
+						// 	if(game.includes('[')){
+						// 		continue;
+						// 	}
 
-         db.collection('table').insertOne( myobj, function(err, res) {
-           if (err) throw err;
-           console.log("1 document inserted");
-           // db.close();
-         });
-       });
-     }
+            //   let start = event.start.dateTime || event.start.date;
 
-   } else {
-     console.log('error:', error); // Print the error if one occurred
-   }
- });
+            //   let opponent = event.summary.split('-').filter(team => !team.includes(teamName))[0].split('(')[0].trim();
 
-let newsUrl = 'http://www.skysports.com/football/news';
+            //   let home_or_away = event.summary.split('-')[0].includes(teamName) ? 'home' : 'away';
 
-request(newsUrl, function (error, response, body) {
-  if(!error){
-    var $ = cheerio.load(body);
-    let headlines = [];
+            //   let score = game.includes('(') ? game.split(' ').slice(-1)[0].replace(/\(|\)/g,'') : '';
 
-    $('.news-list__headline').each(function(i, elm) {
-      var obj = {};
-      obj.headline = $(this).text().trim();
-      headlines[i] = obj;
-    });
+            //   let winLossDraw;
 
-		 $('.news-list__snippet').each(function(i, elm) {
-			 headlines[i].snippet = $(this).text();
-		 });
+            //   if(score.split('-').length > 0) {
+            //     winLossDraw = home_or_away === 'home' && parseInt(score.split('-')[0]) > parseInt(score.split('-')[1]) ? 'won' :
+            //       home_or_away === 'away' && parseInt(score.split('-')[1]) > parseInt(score.split('-')[0]) ? 'won' :
+            //       parseInt(score.split('-')[1]) == parseInt(score.split('-')[0]) ? 'draw' :
+            //       score.split('-').length == 1 ? '' : 'lost'
+            //   }
 
-		 $('.news-list__image').each(function(i, elm) {
-			 headlines[i].image = $(this).attr('data-src');;
-		 });
+						// 	let abbr = imageChecker.imageChecker(opponent);
 
-		 for(var i = 0; i < headlines.length; i++) {
-			 let headline = headlines[i].headline;
-			 let snippet = headlines[i].snippet;
-	 		 let image = headlines[i].image.replace(/[&\#{}]/g,'').replace('http', 'https');
+            //   // MongoClient.connect(url, function(err, db) {
+            //     if (err) throw err;
 
-			 MongoClient.connect(url, function(err, db) {
-				 if (err) throw err;
+            //     var obj = {
+            //       game,
+            //       start,
+            //       opponent,
+						// 			abbr,
+            //       home_or_away,
+            //       score,
+            //       winLossDraw
+            //     };
 
-				 var myobj = {
-					 headline,
-					 snippet,
-					 image
-				 };
+						// 		let dbName = imageChecker.imageChecker(teamName);
 
-				 db.collection('headlines').insertOne(myobj, function(err, res) {
-					 if (err) throw err;
-					 console.log("1 document inserted");
-					 // db.close();
-				 });
-			 });
-		 }
+            //     db.collection(dbName.trim()).insertOne(obj, function(err, res) {
+            //       if (err) throw err;
+            //       console.log("1 document inserted");
 
-  } else {
-    console.log('error:', error); // Print the error if one occurred
-  }
-});
+            //     });
+						// 	}
+						// 	db.close();
+            // });
+        //   }
+        // });
+      // }
+    // }
+  // });
+// }
 
-let scrapeUrlThree = 'http://www.bbc.co.uk/sport/football/premier-league/top-scorers';
 
-request(scrapeUrlThree, function (error, response, body) {
-  if(!error){
-   var $ = cheerio.load(body);
-   let topScorers = [];
+// let scrapeUrlTwo = 'http://www.espn.co.uk/football/table/_/league/eng.1';
 
-   var data = $('.top-player-stats');
+// request(scrapeUrlTwo, function (error, response, body) {
+//    if(!error){
+//      var $ = cheerio.load(body);
+//      let table = [];
 
-   $('.top-player-stats__name').each(function(i, elm) {
-     var obj = {};
-     obj.player = $(this).text();
-     topScorers[i] = obj;
-   });
+//      var data = $('.standings');
 
-  $('.top-player-stats__goals-scored-number').each(function(i, elm) {
-    topScorers[i].goals = $(this).text();
-  });
+//      $('.team-names').each(function(i, elm) {
+//        var obj = {};
+//        obj.team = $(this).text();
+//        table[i] = obj;
+//      });
 
-	 $('.team-short-name').each(function(i, elm) {
-		 topScorers[i].team = $(this).text();
-	 });
+// 		 $('.standings-row abbr').each(function(i, elm) {
+// 			 table[i].abbr = $(this).text();
+// 		 });
 
-   for(var i = 0; i < topScorers.length; i++) {
-     let player = topScorers[i].player;
-     let goals = parseInt(topScorers[i].goals);
-		 let team = topScorers[i].team;
-		 let abbr = imageChecker.imageChecker(team);
+//      $('.standings-row > td:nth-child(2)').each(function(i, elm) {
+//        table[i].gamesPlayed = $(this).text();
+//      });
 
-     // INSERT FIXTURES INTO THE DATABASE
+//      $('.standings-row > td:nth-child(3)').each(function(i, elm) {
+//        table[i].won = $(this).text();
+//      });
 
-     MongoClient.connect(url, function(err, db) {
-       if (err) throw err;
-       var myobj = {
-        player,
-        team,
-        goals,
-				abbr
-       };
+//      $('.standings-row > td:nth-child(4)').each(function(i, elm) {
+//         table[i].draw = $(this).text();
+//      });
 
-       db.collection('topscorers').insertOne(myobj, function(err, res) {
-         if (err) throw err;
-         console.log("1 document inserted");
-         // db.close();
-       });
-     });
-   }
+//      $('.standings-row > td:nth-child(5)').each(function(i, elm) {
+//         table[i].lost = $(this).text();
+//      });
 
- } else {
-   console.log('error:', error); // Print the error if one occurred
- }
-});
+//     $('.standings-row > td:nth-last-child(2)').each(function(i, elm) {
+//         table[i].goalDiff = $(this).text();
+//     });
 
-let scrapeUrlFour = 'http://www.espnfc.co.uk/barclays-premier-league/23/statistics/assists';
+//      $('.standings-row > td:last-child').each(function(i, elm) {
+//         table[i].points = $(this).text();
+//      });
 
-request(scrapeUrlFour, function (error, response, body) {
- if(!error){
-   var $ = cheerio.load(body);
-   let topAssists = [];
+//      for(var i = 0; i < table.length; i++) {
+//        let name = table[i].team;
+// 			 let abbr = table[i].abbr;
+//        let gamesPlayed = parseInt(table[i].gamesPlayed);
+//        let won = parseInt(table[i].won);
+//        let draw = parseInt(table[i].draw);
+//        let lost = parseInt(table[i].lost);
+//        let goalDiff = parseInt(table[i].goalDiff);
+//        let points = parseInt(table[i].points);
 
-   $("td[headers='player']").each(function(i, elm) {
-     var obj = {};
-     obj.player = $(this).text();
-     topAssists[i] = obj;
-   });
+//        // INSERT FIXTURES INTO THE DATABASE
 
-	 $("td[headers='team']").each(function(i, elm) {
-		 topAssists[i].team = $(this).text();
-	 });
+//        MongoClient.connect(url, function(err, db) {
+//          if (err) throw err;
+//          var myobj = {
+//            name,
+// 					 abbr,
+//            gamesPlayed,
+//            won,
+//            draw,
+//            lost,
+//            goalDiff,
+//            points
+//          };
 
-  $("td[headers='goals']").each(function(i, elm) {
-    topAssists[i].assists = $(this).text();
-  });
+//          db.collection('table').insertOne( myobj, function(err, res) {
+//            if (err) throw err;
+//            console.log("1 document inserted");
+//            // db.close();
+//          });
+//        });
+//      }
 
-   for(var i = 0; i < topAssists.length; i++) {
-     let player = topAssists[i].player;
-     let assists = parseInt(topAssists[i].assists);
-		 let team = topAssists[i].team;
-			 let abbr = imageChecker.imageChecker(team);
+//    } else {
+//      console.log('error:', error); // Print the error if one occurred
+//    }
+//  });
 
-     // INSERT FIXTURES INTO THE DATABASE
+// let newsUrl = 'http://www.skysports.com/football/news';
 
-     MongoClient.connect(url, function(err, db) {
-       if (err) throw err;
-       var myobj = {
-        player,
-        assists,
-        team,
-				abbr
-       };
+// request(newsUrl, function (error, response, body) {
+//   if(!error){
+//     var $ = cheerio.load(body);
+//     let headlines = [];
 
-       db.collection('topassists').insertOne(myobj, function(err, res) {
-         if (err) throw err;
-         console.log("1 document inserted");
-         db.close();
-       });
-     });
-   }
+//     $('.news-list__headline').each(function(i, elm) {
+//       var obj = {};
+//       obj.headline = $(this).text().trim();
+//       headlines[i] = obj;
+//     });
 
- } else {
-   console.log('error:', error); // Print the error if one occurred
- }
-});
+// 		 $('.news-list__snippet').each(function(i, elm) {
+// 			 headlines[i].snippet = $(this).text();
+// 		 });
+
+// 		 $('.news-list__image').each(function(i, elm) {
+// 			 headlines[i].image = $(this).attr('data-src');;
+// 		 });
+
+// 		 for(var i = 0; i < headlines.length; i++) {
+// 			 let headline = headlines[i].headline;
+// 			 let snippet = headlines[i].snippet;
+// 	 		 let image = headlines[i].image.replace(/[&\#{}]/g,'').replace('http', 'https');
+
+// 			 MongoClient.connect(url, function(err, db) {
+// 				 if (err) throw err;
+
+// 				 var myobj = {
+// 					 headline,
+// 					 snippet,
+// 					 image
+// 				 };
+
+// 				 db.collection('headlines').insertOne(myobj, function(err, res) {
+// 					 if (err) throw err;
+// 					 console.log("1 document inserted");
+// 					 // db.close();
+// 				 });
+// 			 });
+// 		 }
+
+//   } else {
+//     console.log('error:', error); // Print the error if one occurred
+//   }
+// });
+
+// let scrapeUrlThree = 'http://www.bbc.co.uk/sport/football/premier-league/top-scorers';
+
+// request(scrapeUrlThree, function (error, response, body) {
+//   if(!error){
+//    var $ = cheerio.load(body);
+//    let topScorers = [];
+
+//    var data = $('.top-player-stats');
+
+//    $('.top-player-stats__name').each(function(i, elm) {
+//      var obj = {};
+//      obj.player = $(this).text();
+//      topScorers[i] = obj;
+//    });
+
+//   $('.top-player-stats__goals-scored-number').each(function(i, elm) {
+//     topScorers[i].goals = $(this).text();
+//   });
+
+// 	 $('.team-short-name').each(function(i, elm) {
+// 		 topScorers[i].team = $(this).text();
+// 	 });
+
+//    for(var i = 0; i < topScorers.length; i++) {
+//      let player = topScorers[i].player;
+//      let goals = parseInt(topScorers[i].goals);
+// 		 let team = topScorers[i].team;
+// 		 let abbr = imageChecker.imageChecker(team);
+
+//      // INSERT FIXTURES INTO THE DATABASE
+
+//      MongoClient.connect(url, function(err, db) {
+//        if (err) throw err;
+//        var myobj = {
+//         player,
+//         team,
+//         goals,
+// 				abbr
+//        };
+
+//        db.collection('topscorers').insertOne(myobj, function(err, res) {
+//          if (err) throw err;
+//          console.log("1 document inserted");
+//          // db.close();
+//        });
+//      });
+//    }
+
+//  } else {
+//    console.log('error:', error); // Print the error if one occurred
+//  }
+// });
+
+// let scrapeUrlFour = 'http://www.espnfc.co.uk/barclays-premier-league/23/statistics/assists';
+
+// request(scrapeUrlFour, function (error, response, body) {
+//  if(!error){
+//    var $ = cheerio.load(body);
+//    let topAssists = [];
+
+//    $("td[headers='player']").each(function(i, elm) {
+//      var obj = {};
+//      obj.player = $(this).text();
+//      topAssists[i] = obj;
+//    });
+
+// 	 $("td[headers='team']").each(function(i, elm) {
+// 		 topAssists[i].team = $(this).text();
+// 	 });
+
+//   $("td[headers='goals']").each(function(i, elm) {
+//     topAssists[i].assists = $(this).text();
+//   });
+
+//    for(var i = 0; i < topAssists.length; i++) {
+//      let player = topAssists[i].player;
+//      let assists = parseInt(topAssists[i].assists);
+// 		 let team = topAssists[i].team;
+// 			 let abbr = imageChecker.imageChecker(team);
+
+//      // INSERT FIXTURES INTO THE DATABASE
+
+//      MongoClient.connect(url, function(err, db) {
+//        if (err) throw err;
+//        var myobj = {
+//         player,
+//         assists,
+//         team,
+// 				abbr
+//        };
+
+//        db.collection('topassists').insertOne(myobj, function(err, res) {
+//          if (err) throw err;
+//          console.log("1 document inserted");
+//          db.close();
+//        });
+//      });
+//    }
+
+//  } else {
+//    console.log('error:', error); // Print the error if one occurred
+//  }
+// });
