@@ -97,7 +97,7 @@ app.get("/groups", function(req, res) {
 
 app.get("/scrapeTopScorers", function() {
   let scrapeUrl =
-    "http://www.bbc.co.uk/sport/football/premier-league/top-scorers";
+    "https://www.bbc.co.uk/sport/football/world-cup/top-scorers";
 
   request(scrapeUrl, function(error, response, body) {
     if (!error) {
@@ -124,7 +124,6 @@ app.get("/scrapeTopScorers", function() {
         let player = topScorers[i].player;
         let goals = parseInt(topScorers[i].goals);
         let team = topScorers[i].team;
-        let abbr = imageChecker.imageChecker(team);
 
         // INSERT FIXTURES INTO THE DATABASE
 
@@ -135,11 +134,10 @@ app.get("/scrapeTopScorers", function() {
             var myobj = {
               player,
               team,
-              goals,
-              abbr
+              goals
             };
 
-            db.collection("topscorers").insertOne(myobj, function(err, res) {
+            db.collection("top-scorers").insertOne(myobj, function(err, res) {
               if (err) throw err;
               console.log("1 document inserted");
               db.close();
@@ -184,25 +182,6 @@ app.get("/group-fixtures", (req, res) => {
             return r.group.length === 1;
           });
           res.json(groupFixtures);
-          db.close();
-        });
-    }
-  );
-});
-
-// Get teams
-
-app.get("/teams", (req, res) => {
-  MongoClient.connect(
-    url,
-    function(err, db) {
-      if (err) throw err;
-      db.collection("teams")
-        .find({})
-        .sort({ abbr: 1 })
-        .toArray(function(err, result) {
-          if (err) throw err;
-          res.json(result);
           db.close();
         });
     }

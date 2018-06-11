@@ -3,7 +3,6 @@ const readline = require('readline');
 const google = require('googleapis');
 const googleAuth = require('google-auth-library');
 const writeJsonFile = require('write-json-file');
-const imageChecker  = require('./imageChecker');
 const request = require('request');
 const cheerio = require('cheerio');
 const MongoClient = require('mongodb').MongoClient;
