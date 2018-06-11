@@ -12,7 +12,6 @@ const url = "mongodb://paulfitz:123456789a@ds016098.mlab.com:16098/world-cup";
 
 app.get("/groups", function(req, res) {
   let scrapeUrl = "https://www.bbc.co.uk/sport/football/world-cup/schedule/group-stage";
-
   request(scrapeUrl, function(error, response, body) {
     const groups = [];
     if (!error) {
@@ -66,6 +65,7 @@ app.get("/groups", function(req, res) {
           if (i % 6 === 0) {
             t = {};
             t.abbr = $(this).text().trim();
+            t.logo = `http://placeholder.com/images/${$(this).text().trim()}.svg`
           } else if (i % 6 === 1) {
             t.won = $(this).text();
           } else if (i % 6 === 2) {
@@ -78,8 +78,6 @@ app.get("/groups", function(req, res) {
             t.points = $(this).text();
             groups[index].teams.push(t);
           }
-
-          console.log(names)
 
         });    
       });
