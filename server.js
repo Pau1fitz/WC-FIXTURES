@@ -73,7 +73,15 @@ app.get("/groups", function(req, res) {
           }
         });    
       });
-    
+
+      MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        db.collection('groups').insert(groups, function(err, res) {
+          if (err) throw err;
+          console.log("1 document inserted");
+          db.close();
+        });
+      });
       res.json(groups)
     }
   });
@@ -139,9 +147,7 @@ app.get("/scrapeTopScorers", function() {
 
 // Get all fixtures
 app.get("/fixtures", function(req, res) {
-  MongoClient.connect(
-    url,
-    function(err, db) {
+  MongoClient.connect(url, (err, db) => {
       if (err) throw err;
       db.collection("fixtures")
         .find({})
@@ -156,7 +162,7 @@ app.get("/fixtures", function(req, res) {
 });
 
 // Get group fixtures
-app.get("/group-fixtures", function(req, res) {
+app.get("/group-fixtures", (req, res) => {
   MongoClient.connect(
     url,
     function(err, db) {
@@ -178,7 +184,7 @@ app.get("/group-fixtures", function(req, res) {
 
 // Get teams
 
-app.get("/teams", function(req, res) {
+app.get("/teams", (req, res) => {
   MongoClient.connect(
     url,
     function(err, db) {
