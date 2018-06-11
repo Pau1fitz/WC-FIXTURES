@@ -4,6 +4,27 @@ var request = require("request");
 var cheerio = require("cheerio");
 var cors = require("cors");
 var app = express();
+
+const puppeteer = require('puppeteer');
+
+(async () => {
+  const browser = await puppeteer.launch({headless: false});
+  const page = await browser.newPage();
+  await page.goto('http://www.skysports.com/world-cup-fixtures');
+  const linkHandlers = await page.$x("//a[contains(text(), 'Russia')]");
+  if (linkHandlers.length > 0) {
+    console.log('LINK', linkHandlers)
+    await linkHandlers[0].click();
+    setTimeout(() => {
+
+      console.log(page.url())
+    }, 2000)
+  } else {
+    throw new Error("Link not found");
+  }
+  await browser.close();
+})();
+
 app.use(cors());
 
 const PORT = process.env.PORT || 5000;
@@ -151,13 +172,66 @@ app.get("/scrapeTopScorers", function() {
   });
 });
 
+app.get("/scrapeHeadlines", (req, res) => {
+  let newsUrl = 'http://www.skysports.com/world-cup';
+
+  request(newsUrl, function (error, response, body) {
+    if(!error){
+      var $ = cheerio.load(body);
+      let headlines = [];
+
+      $('.news-list__headline').each(function(i, elm) {
+        var obj = {};
+        obj.headline = $(this).text().trim();
+        headlines[i] = obj;
+      });
+
+      $('.news-list__snippet').each(function(i, elm) {
+        headlines[i].snippet = $(this).text();
+      });
+
+      $('.news-list__image').each(function(i, elm) {
+        headlines[i].image = $(this).attr('data-src');;
+      });
+
+      for(var i = 0; i < headlines.length; i++) {
+        let headline = headlines[i].headline;
+        let snippet = headlines[i].snippet;
+        let image = headlines[i].image.replace(/[&\#{}]/g,'').replace('http', 'https');
+
+        MongoClient.connect(url, function(err, db) {
+          if (err) throw err;
+
+          var myobj = {
+            headline,
+            snippet,
+            image
+          };
+
+          db.collection('headlines').insertOne(myobj, function(err, res) {
+            if (err) throw err;
+            console.log("1 document inserted");
+            db.close();
+          });
+        });
+      }
+
+      res.json(headlines);
+
+    } else {
+      console.log('error:', error); // Print the error if one occurred
+    }
+   
+  });
+});
+
 // Get all fixtures
 app.get("/fixtures", function(req, res) {
   MongoClient.connect(url, (err, db) => {
       if (err) throw err;
       db.collection("fixtures")
         .find({})
-        .sort({ group: -1 })
+        .sort({ kickOffTime: -1 })
         .toArray(function(err, result) {
           if (err) throw err;
           res.json(result);
@@ -175,7 +249,7 @@ app.get("/group-fixtures", (req, res) => {
       if (err) throw err;
       db.collection("fixtures")
         .find({})
-        .sort({ group: 1 })
+        .sort({ kickOffTime: 1 })
         .toArray(function(err, result) {
           if (err) throw err;
           let groupFixtures = result.filter(r => {

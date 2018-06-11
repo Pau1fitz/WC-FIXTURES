@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
-  "scripts": {
-  },
+  "scripts": {},
   "author": "Paul Fitzgerald",
   "license": "MIT",
   "dependencies": {
@@ -13,6 +12,7 @@
     "express": "^4.16.2",
     "googleapis": "^23.0.0",
     "mongodb": "2.2.33",
+    "puppeteer": "^1.5.0",
     "request": "^2.83.0"
   }
 }
