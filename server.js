@@ -53,9 +53,16 @@ app.get("/groups", function(req, res) {
       ];
 
       const teams = [];
+      const names = [];
       groups.forEach((group, index) => {
         let t;
+        
+        $(`#group-stage--${group.groupName.toLowerCase()} table .gel-long-primer .table__cell abbr`).each(function(index, e){
+          names.push($(this).attr('title'));
+        });
+
         $(`#group-stage--${group.groupName.toLowerCase()} table .gel-long-primer .table__cell`).each(function(i, elm) {
+
           if (i % 6 === 0) {
             t = {};
             t.abbr = $(this).text().trim();
@@ -71,6 +78,9 @@ app.get("/groups", function(req, res) {
             t.points = $(this).text();
             groups[index].teams.push(t);
           }
+
+          console.log(names)
+
         });    
       });
 
