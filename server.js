@@ -1,29 +1,9 @@
-var express = require("express");
-var fs = require("fs");
-var request = require("request");
-var cheerio = require("cheerio");
-var cors = require("cors");
-var app = express();
-
+const express = require("express");
+const request = require("request");
+const cheerio = require("cheerio");
 const puppeteer = require('puppeteer');
-
-(async () => {
-  const browser = await puppeteer.launch({headless: false});
-  const page = await browser.newPage();
-  await page.goto('http://www.skysports.com/world-cup-fixtures');
-  const linkHandlers = await page.$x("//a[contains(text(), 'Russia')]");
-  if (linkHandlers.length > 0) {
-    console.log('LINK', linkHandlers)
-    await linkHandlers[0].click();
-    setTimeout(() => {
-
-      console.log(page.url())
-    }, 2000)
-  } else {
-    throw new Error("Link not found");
-  }
-  await browser.close();
-})();
+const cors = require("cors");
+const app = express();
 
 app.use(cors());
 
@@ -31,10 +11,99 @@ const PORT = process.env.PORT || 5000;
 var MongoClient = require("mongodb").MongoClient;
 const url = "mongodb://paulfitz:123456789a@ds016098.mlab.com:16098/world-cup";
 
+app.get('/scrape-team-form', () => {
+  MongoClient.connect(url, (err, db) => {
+    if (err) throw err;
+  
+    let scrape = async () => {
+      const browser = await puppeteer.launch({headless: false});
+      const page = await browser.newPage();
+      await page.goto('http://www.skysports.com/world-cup-fixtures');
+      await page.waitForSelector('.matches__link');  
+      const result = await page.evaluate(() => {
+          let links = document.querySelectorAll('.matches__link');
+          const linksArray = [];
+          [].forEach.call(links, function(el) {
+            linksArray.push(el.href);
+          });
+          return {
+            linksArray
+          }
+      });
+      browser.close();
+      return result;
+    };
+    
+    
+    let scrapeUrl = async (url) => {
+      const browser = await puppeteer.launch();
+      const page = await browser.newPage();
+      await page.goto(url);
+      await page.waitForSelector('.block-header__title');
+      const result = await page.evaluate(() => {
+        
+        let team = document.querySelector('.block-header__title').innerText.replace(/last 6/i, '').trim();
+        let resultsEl = document.querySelectorAll('.match-area-form__fixture');
+        let datesEl = document.querySelectorAll('.match-area-form__date');
+    
+        dates = [];
+        results = [];
+        winLossDraws = [];
+        
+        
+        [].forEach.call(resultsEl, (el) => {
+          results.push({
+            game: el.innerText
+          });
+        });
+        
+        let winLossDrawEls = document.querySelectorAll('.match-area-form__outcome-container');
+        
+        [].forEach.call(winLossDrawEls, (el, i) => {
+          results[i].form = getComputedStyle(el, ':before').getPropertyValue('content');
+        });
+        
+        [].forEach.call(datesEl, (el, i) => {
+          results[i].date = el.innerText;
+        });
+        return {
+          team,
+          results
+        }
+      });
+    
+      browser.close();
+      return result;
+    };
+    
+    scrape().then((value) => {  
+      var x = 0;
+      function go() {
+        scrapeUrl(value.linksArray[x]).then((value) => {
+          if(value.results.length > 0) {
+            console.log(value)
+            db.collection('form').update({ team: value.team }, value, { upsert: true }, function(err, res) {
+              if (err) throw err;
+              console.log("1 document inserted", value.team);
+            });
+          }
+        });
+        if (x++ <= value.linksArray.length) {
+          setTimeout(go, 5000);
+        }
+      }
+      go();
+      return false;
+    });
+  });
+});
+
+
+
+
 app.get("/groups", function(req, res) {
   let scrapeUrl = "https://www.bbc.co.uk/sport/football/world-cup/schedule/group-stage";
   request(scrapeUrl, function(error, response, body) {
-    const groups = [];
     if (!error) {
       var $ = cheerio.load(body);
       const groups = [
@@ -72,7 +141,6 @@ app.get("/groups", function(req, res) {
         }
       ];
 
-      const teams = [];
       const names = [];
       groups.forEach((group, index) => {
         let t;
@@ -263,7 +331,6 @@ app.get("/group-fixtures", (req, res) => {
 });
 
 // Get top scorers
-
 app.get("/topscorers", function(req, res) {
   MongoClient.connect(
     url,
@@ -282,7 +349,6 @@ app.get("/topscorers", function(req, res) {
 });
 
 // Get top assists
-
 app.get("/topassists", function(req, res) {
   MongoClient.connect(
     url,
@@ -301,7 +367,6 @@ app.get("/topassists", function(req, res) {
 });
 
 // Get team name
-
 app.get("/team/:teamName", function(req, res) {
   MongoClient.connect(
     url,
@@ -320,7 +385,6 @@ app.get("/team/:teamName", function(req, res) {
 });
 
 // Get Next Games
-
 app.get("/nextGames/:teamName/:numGames?", function(req, res) {
   MongoClient.connect(
     url,

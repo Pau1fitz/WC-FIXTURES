@@ -132,7 +132,7 @@ function getFixtures(auth) {
 
     const fixtures = response.items;
   
-    fixtures.forEach((f,i) => {
+    fixtures.forEach((f, i) => {
       let group = f.summary.replace( /(^.*\[|\].*$)/g, '' );
       let fixture = f.summary.replace(/(\[).+?(\])/g, '').replace('-' , 'v');
       let kickOffTime = f.start.dateTime;
