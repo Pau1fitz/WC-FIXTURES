@@ -141,7 +141,7 @@ function getFixtures(auth) {
 
       MongoClient.connect(url, function(err, db) {
         if (err) throw err;
-        var fixtureObj = {
+        const fixtureObj = {
           group,
           fixture,
           kickOffTime
