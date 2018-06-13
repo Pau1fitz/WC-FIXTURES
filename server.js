@@ -324,8 +324,9 @@ app.get('/form/:countryOne/:countryTwo', (req, res) => {
     db.collection("form").find({}).toArray(function(err, result) {
         if (err) throw err;
         let form = result.filter(r => {
+        
           const team = r.team.toLowerCase().replace(/ /g, '');
-          return team === req.params.countryOne.toLowerCase() || team === req.params.countryTwo.toLowerCase();
+          return team === req.params.countryOne.toLowerCase().replace(/ /g, '') || team === req.params.countryTwo.toLowerCase().replace(/ /g, '');
         });
         res.json(form);
         db.close();
