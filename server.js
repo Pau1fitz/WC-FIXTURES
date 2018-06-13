@@ -34,7 +34,6 @@ app.get('/scrape-team-form', () => {
       return result;
     };
     
-    
     let scrapeUrl = async (url) => {
       const browser = await puppeteer.launch();
       const page = await browser.newPage();
@@ -50,21 +49,27 @@ app.get('/scrape-team-form', () => {
         results = [];
         winLossDraws = [];
         
-        
-        [].forEach.call(resultsEl, (el) => {
-          results.push({
-            game: el.innerText
-          });
+        [].forEach.call(resultsEl, (el, i) => {
+          console.log('i ===> ', i)
+          if(i < 6) {
+            results.push({
+              game: el.innerText
+            });
+          }
         });
         
         let winLossDrawEls = document.querySelectorAll('.match-area-form__outcome-container');
         
         [].forEach.call(winLossDrawEls, (el, i) => {
-          results[i].form = getComputedStyle(el, ':before').getPropertyValue('content');
+          if(i < 6) {
+            results[i].form = getComputedStyle(el, ':before').getPropertyValue('content');
+          }
         });
         
         [].forEach.call(datesEl, (el, i) => {
-          results[i].date = el.innerText;
+          if(i < 6) {
+            results[i].date = el.innerText;
+          }
         });
         return {
           team,
@@ -84,12 +89,12 @@ app.get('/scrape-team-form', () => {
             console.log(value)
             db.collection('form').update({ team: value.team }, value, { upsert: true }, function(err, res) {
               if (err) throw err;
-              console.log("1 document inserted", value.team);
+              console.log("Document inserted 😎", value.team);
             });
           }
         });
         if (x++ <= value.linksArray.length) {
-          setTimeout(go, 5000);
+          setTimeout(go, 10000);
         }
       }
       go();
@@ -97,9 +102,6 @@ app.get('/scrape-team-form', () => {
     });
   });
 });
-
-
-
 
 app.get("/groups", function(req, res) {
   let scrapeUrl = "https://www.bbc.co.uk/sport/football/world-cup/schedule/group-stage";
@@ -141,20 +143,15 @@ app.get("/groups", function(req, res) {
         }
       ];
 
-      const names = [];
       groups.forEach((group, index) => {
         let t;
-        
-        $(`#group-stage--${group.groupName.toLowerCase()} table .gel-long-primer .table__cell abbr`).each(function(index, e){
-          names.push($(this).attr('title'));
-        });
 
         $(`#group-stage--${group.groupName.toLowerCase()} table .gel-long-primer .table__cell`).each(function(i, elm) {
 
           if (i % 6 === 0) {
             t = {};
+            t.name = $(this).find('abbr').attr('title');
             t.abbr = $(this).text().trim();
-            t.logo = `http://placeholder.com/images/${$(this).text().trim()}.svg`
           } else if (i % 6 === 1) {
             t.won = $(this).text();
           } else if (i % 6 === 2) {
@@ -175,7 +172,7 @@ app.get("/groups", function(req, res) {
         if (err) throw err;
         db.collection('groups').insert(groups, function(err, res) {
           if (err) throw err;
-          console.log("1 document inserted");
+          console.log("document inserted 😎");
           db.close();
         });
       });
@@ -192,8 +189,6 @@ app.get("/scrapeTopScorers", function() {
     if (!error) {
       var $ = cheerio.load(body);
       let topScorers = [];
-
-      var data = $(".top-player-stats");
 
       $(".top-player-stats__name").each(function(i, elm) {
         var obj = {};
@@ -228,7 +223,7 @@ app.get("/scrapeTopScorers", function() {
 
             db.collection("top-scorers").insertOne(myobj, function(err, res) {
               if (err) throw err;
-              console.log("1 document inserted");
+              console.log("document inserted 😎");
               db.close();
             });
           }
@@ -283,13 +278,10 @@ app.get("/scrapeHeadlines", (req, res) => {
           });
         });
       }
-
       res.json(headlines);
-
     } else {
       console.log('error:', error); // Print the error if one occurred
     }
-   
   });
 });
 
@@ -311,14 +303,10 @@ app.get("/fixtures", function(req, res) {
 
 // Get group fixtures
 app.get("/group-fixtures", (req, res) => {
-  MongoClient.connect(
-    url,
-    function(err, db) {
+  MongoClient.connect(url, (err, db) => {
       if (err) throw err;
-      db.collection("fixtures")
-        .find({})
-        .sort({ kickOffTime: 1 })
-        .toArray(function(err, result) {
+      db.collection("fixtures").find({}).sort({ kickOffTime: 1 })
+      .toArray(function(err, result) {
           if (err) throw err;
           let groupFixtures = result.filter(r => {
             return r.group.length === 1;
@@ -328,6 +316,21 @@ app.get("/group-fixtures", (req, res) => {
         });
     }
   );
+});
+
+app.get('/form/:countryOne/:countryTwo', (req, res) => {
+  MongoClient.connect(url, (err, db) => {
+    if (err) throw err;
+    db.collection("form").find({}).toArray(function(err, result) {
+        if (err) throw err;
+        let form = result.filter(r => {
+          const team = r.team.toLowerCase().replace(/ /g, '');
+          return team === req.params.countryOne.toLowerCase() || team === req.params.countryTwo.toLowerCase();
+        });
+        res.json(form);
+        db.close();
+      });
+  });
 });
 
 // Get top scorers

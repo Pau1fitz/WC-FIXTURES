@@ -130,6 +130,8 @@ function getFixtures(auth) {
       return;
     }
 
+    console.log('Fixtures retrieved.... 🌍');
+
     const fixtures = response.items;
   
     fixtures.forEach((f, i) => {
@@ -147,7 +149,7 @@ function getFixtures(auth) {
 
         db.collection('fixtures').insertOne(fixtureObj, function(err, res) {
           if (err) throw err;
-          console.log("1 document inserted");
+          console.log("document inserted 😎");
           db.close();
         });
       });
