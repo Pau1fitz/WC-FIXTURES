@@ -11,6 +11,8 @@ const PORT = process.env.PORT || 5000;
 var MongoClient = require("mongodb").MongoClient;
 const url = "mongodb://paulfitz:123456789a@ds016098.mlab.com:16098/world-cup";
 
+// get form of last 6 games
+
 app.get('/scrape-team-form', () => {
   MongoClient.connect(url, (err, db) => {
     if (err) throw err;
@@ -103,7 +105,8 @@ app.get('/scrape-team-form', () => {
   });
 });
 
-app.get("/groups", function(req, res) {
+// scrape groups
+app.get("/scrape-groups", function(req, res) {
   let scrapeUrl = "https://www.bbc.co.uk/sport/football/world-cup/schedule/group-stage";
   request(scrapeUrl, function(error, response, body) {
     if (!error) {
@@ -170,6 +173,8 @@ app.get("/groups", function(req, res) {
 
       MongoClient.connect(url, function(err, db) {
         if (err) throw err;
+        console.log('db', db)
+        db.collection('groups').drop();
         db.collection('groups').insert(groups, function(err, res) {
           if (err) throw err;
           console.log("document inserted 😎");
@@ -181,54 +186,78 @@ app.get("/groups", function(req, res) {
   });
 });
 
-app.get("/scrapeTopScorers", function() {
-  let scrapeUrl =
-    "https://www.bbc.co.uk/sport/football/world-cup/top-scorers";
+// scrape top scorers
+app.get("/scrape-top-scorers", function(req, res) {
+  let scrapeUrl = "http://www.espnfc.us/fifa-world-cup/4/statistics/scorers";
 
   request(scrapeUrl, function(error, response, body) {
     if (!error) {
       var $ = cheerio.load(body);
       let topScorers = [];
 
-      $(".top-player-stats__name").each(function(i, elm) {
+      $('td[headers="player"]').each(function(i, e) {
         var obj = {};
         obj.player = $(this).text();
         topScorers[i] = obj;
       });
 
-      $(".top-player-stats__goals-scored-number").each(function(i, elm) {
+      $('td[headers="goals"]').each(function(i, e) {
         topScorers[i].goals = $(this).text();
       });
 
-      $(".team-short-name").each(function(i, elm) {
+      $('td[headers="team"]').each(function(i, e) {
         topScorers[i].team = $(this).text();
       });
 
-      for (var i = 0; i < topScorers.length; i++) {
-        let player = topScorers[i].player;
-        let goals = parseInt(topScorers[i].goals);
-        let team = topScorers[i].team;
+      MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        db.collection('top-scorers').drop();
+        db.collection('top-scorers').insert(topScorers, function(err, res) {
+          if (err) throw err;
+          console.log("document inserted 😎");
+          db.close();
+        });
+      });
+      res.json(topScorers);
+    } else {
+      console.log("error:", error); // Print the error if one occurred
+    }
+  });
+});
 
-        // INSERT FIXTURES INTO THE DATABASE
+// scrape assists
+app.get("/scrape-top-assists", function(req, res) {
+  let scrapeUrl = "http://www.espnfc.us/fifa-world-cup/4/statistics/assists";
 
-        MongoClient.connect(
-          url,
-          function(err, db) {
-            if (err) throw err;
-            var myobj = {
-              player,
-              team,
-              goals
-            };
+  request(scrapeUrl, function(error, response, body) {
+    if (!error) {
+      var $ = cheerio.load(body);
+      let topAssists = [];
 
-            db.collection("top-scorers").insertOne(myobj, function(err, res) {
-              if (err) throw err;
-              console.log("document inserted 😎");
-              db.close();
-            });
-          }
-        );
-      }
+      $('td[headers="player"]').each(function(i, e) {
+        var obj = {};
+        obj.player = $(this).text();
+        topAssists[i] = obj;
+      });
+
+      $('td[headers="goals"]').each(function(i, e) {
+        topAssists[i].assists = $(this).text();
+      });
+
+      $('td[headers="team"]').each(function(i, e) {
+        topAssists[i].team = $(this).text();
+      });
+
+      MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        db.collection('top-assists').drop();
+        db.collection('top-assists').insert(topAssists, function(err, res) {
+          if (err) throw err;
+          console.log("document inserted 😎");
+          db.close();
+        });
+      });
+      res.json(topAssists);
     } else {
       console.log("error:", error); // Print the error if one occurred
     }
@@ -270,7 +299,7 @@ app.get("/scrapeHeadlines", (req, res) => {
             snippet,
             image
           };
-
+          db.collection('headlines').drop();
           db.collection('headlines').insertOne(myobj, function(err, res) {
             if (err) throw err;
             console.log("1 document inserted 😎");
@@ -316,131 +345,130 @@ app.get("/headlines", function(req, res) {
   );
 });
 
+// Get groups
+app.get("/groups", (req, res) => {
+  MongoClient.connect(url, (err, db) => {
+      if (err) throw err;
+      db.collection("groups").find({})
+      .toArray(function(err, result) {
+          if (err) throw err;
+          res.json(result);
+          db.close();
+        });
+    }
+  );
+});
+
 // Get group fixtures
 app.get("/group-fixtures", (req, res) => {
   MongoClient.connect(url, (err, db) => {
       if (err) throw err;
       db.collection("fixtures").find({}).sort({ kickOffTime: 1 })
       .toArray(function(err, result) {
-          if (err) throw err;
-          let groupFixtures = result.filter(r => {
-            return r.group.length === 1;
-          });
-          res.json(groupFixtures);
-          db.close();
+        if (err) throw err;
+        let groupFixtures = result.filter(r => {
+          return r.group.length === 1;
         });
+        res.json(groupFixtures);
+        db.close();
+      });
     }
   );
 });
 
+// Get team form
 app.get('/form/:countryOne/:countryTwo', (req, res) => {
   MongoClient.connect(url, (err, db) => {
     if (err) throw err;
     db.collection("form").find({}).toArray(function(err, result) {
-        if (err) throw err;
-        let form = result.filter(r => {
-        
-          const team = r.team.toLowerCase().replace(/ /g, '');
-          return team === req.params.countryOne.toLowerCase().replace(/ /g, '') || team === req.params.countryTwo.toLowerCase().replace(/ /g, '');
-        });
-        res.json(form);
-        db.close();
+      if (err) throw err;
+      let form = result.filter(r => {
+      
+        const team = r.team.toLowerCase().replace(/ /g, '');
+        return team === req.params.countryOne.toLowerCase().replace(/ /g, '') || team === req.params.countryTwo.toLowerCase().replace(/ /g, '');
       });
+      res.json(form);
+      db.close();
+    });
   });
 });
 
 // Get top scorers
-app.get("/topscorers", function(req, res) {
-  MongoClient.connect(
-    url,
-    function(err, db) {
+app.get("/top-scorers", function(req, res) {
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err;
+    db.collection("top-scorers")
+    .find({})
+    .sort({ goals: -1 })
+    .toArray(function(err, result) {
       if (err) throw err;
-      db.collection("topscorers")
-        .find({})
-        .sort({ goals: -1 })
-        .toArray(function(err, result) {
-          if (err) throw err;
-          res.json(result);
-          db.close();
-        });
-    }
-  );
+      res.json(result);
+      db.close();
+    });
+  });
 });
 
 // Get top assists
-app.get("/topassists", function(req, res) {
-  MongoClient.connect(
-    url,
-    function(err, db) {
+app.get("/top-assists", function(req, res) {
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err;
+    db.collection("top-assists")
+    .find({})
+    .sort({ assists: -1 })
+    .toArray(function(err, result) {
       if (err) throw err;
-      db.collection("topassists")
-        .find({})
-        .sort({ assists: -1 })
-        .toArray(function(err, result) {
-          if (err) throw err;
-          res.json(result);
-          db.close();
-        });
-    }
-  );
+      res.json(result);
+      db.close();
+    });
+  });
 });
 
 // Get team name
 app.get("/team/:teamName", function(req, res) {
-  MongoClient.connect(
-    url,
-    function(err, db) {
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err;
+    db.collection(req.params.teamName)
+    .find({})
+    .sort({ start: 1 })
+    .toArray(function(err, result) {
       if (err) throw err;
-      db.collection(req.params.teamName)
-        .find({})
-        .sort({ start: 1 })
-        .toArray(function(err, result) {
-          if (err) throw err;
-          res.json(result);
-          db.close();
-        });
-    }
-  );
+      res.json(result);
+      db.close();
+    });
+  });
 });
 
 // Get Next Games
 app.get("/nextGames/:teamName/:numGames?", function(req, res) {
-  MongoClient.connect(
-    url,
-    function(err, db) {
-      if (err) throw err;
-      db.collection(req.params.teamName)
-        .find({ score: { $type: 2 }, $where: "this.score.length == 0" })
-        .sort({ start: 1 })
-        .limit(parseInt(req.params.numGames))
-        .toArray(function(err, result) {
-          if (err) throw err;
-          res.json(result);
-          db.close();
-        });
-    }
-  );
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err;
+    db.collection(req.params.teamName)
+    .find({ score: { $type: 2 }, $where: "this.score.length == 0" })
+    .sort({ start: 1 })
+    .limit(parseInt(req.params.numGames))
+    .toArray(function(err, result) {
+    if (err) throw err;
+    res.json(result);
+    db.close();
+    });
+  });
 });
 
 // Get Previous Games
-
 app.get("/prevGames/:teamName/:numGames?", function(req, res) {
-  MongoClient.connect(
-    url,
-    function(err, db) {
+  MongoClient.connect(url, function(err, db) {
+    if (err) throw err;
+    let numGames = parseInt(req.params.numGames) || 100;
+    db.collection(req.params.teamName)
+    .find({ score: { $type: 2 }, $where: "this.score.length > 0" })
+    .sort({ start: -1 })
+    .limit(numGames)
+    .toArray(function(err, result) {
       if (err) throw err;
-      let numGames = parseInt(req.params.numGames) || 100;
-      db.collection(req.params.teamName)
-        .find({ score: { $type: 2 }, $where: "this.score.length > 0" })
-        .sort({ start: -1 })
-        .limit(numGames)
-        .toArray(function(err, result) {
-          if (err) throw err;
-          res.json(result);
-          db.close();
-        });
-    }
-  );
+      res.json(result);
+      db.close();
+    });
+  });
 });
 
 app.listen(PORT, () => {
