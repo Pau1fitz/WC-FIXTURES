@@ -273,7 +273,7 @@ app.get("/scrapeHeadlines", (req, res) => {
 
           db.collection('headlines').insertOne(myobj, function(err, res) {
             if (err) throw err;
-            console.log("1 document inserted");
+            console.log("1 document inserted 😎");
             db.close();
           });
         });
@@ -292,6 +292,21 @@ app.get("/fixtures", function(req, res) {
       db.collection("fixtures")
         .find({})
         .sort({ kickOffTime: -1 })
+        .toArray(function(err, result) {
+          if (err) throw err;
+          res.json(result);
+          db.close();
+        });
+    }
+  );
+});
+
+// Get all headlines
+app.get("/headlines", function(req, res) {
+  MongoClient.connect(url, (err, db) => {
+      if (err) throw err;
+      db.collection("headlines")
+        .find({})
         .toArray(function(err, result) {
           if (err) throw err;
           res.json(result);
