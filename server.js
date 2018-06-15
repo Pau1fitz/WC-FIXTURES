@@ -294,7 +294,7 @@ app.get("/scrape-headlines", (req, res) => {
         if (err) throw err;
 
         db.collection('headlines').drop();
-        db.collection('headlines').insert(insert, function(err, res) {
+        db.collection('headlines').insert(headlines, function(err, res) {
           if (err) throw err;
           console.log("documents inserted 😎");
           db.close();
