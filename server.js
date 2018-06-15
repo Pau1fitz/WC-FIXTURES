@@ -290,27 +290,17 @@ app.get("/scrape-headlines", (req, res) => {
         headlines[i].image = $(this).attr('data-src');;
       });
 
-      for(var i = 0; i < headlines.length; i++) {
-        let headline = headlines[i].headline;
-        let snippet = headlines[i].snippet;
-        let image = headlines[i].image.replace(/[&\#{}]/g,'').replace('http', 'https');
+      MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
 
-        MongoClient.connect(url, function(err, db) {
+        db.collection('headlines').drop();
+        db.collection('headlines').insert(insert, function(err, res) {
           if (err) throw err;
-
-          var myobj = {
-            headline,
-            snippet,
-            image
-          };
-          db.collection('headlines').drop();
-          db.collection('headlines').insertOne(myobj, function(err, res) {
-            if (err) throw err;
-            console.log("1 document inserted 😎");
-            db.close();
-          });
+          console.log("documents inserted 😎");
+          db.close();
         });
-      }
+      });
+      
       res.json(headlines);
     } else {
       console.log('error:', error); // Print the error if one occurred
