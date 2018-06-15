@@ -197,12 +197,12 @@ app.get("/scrape-top-scorers", function(req, res) {
 
       $('td[headers="player"]').each(function(i, e) {
         var obj = {};
-        obj.player = $(this).text();
+        obj.name = $(this).text();
         topScorers[i] = obj;
       });
 
       $('td[headers="goals"]').each(function(i, e) {
-        topScorers[i].goals = $(this).text();
+        topScorers[i].amount = $(this).text();
       });
 
       $('td[headers="team"]').each(function(i, e) {
@@ -236,12 +236,12 @@ app.get("/scrape-top-assists", function(req, res) {
 
       $('td[headers="player"]').each(function(i, e) {
         var obj = {};
-        obj.player = $(this).text();
+        obj.name = $(this).text();
         topAssists[i] = obj;
       });
 
       $('td[headers="goals"]').each(function(i, e) {
-        topAssists[i].assists = $(this).text();
+        topAssists[i].amount = $(this).text();
       });
 
       $('td[headers="team"]').each(function(i, e) {
@@ -264,7 +264,7 @@ app.get("/scrape-top-assists", function(req, res) {
   });
 });
 
-app.get("/scrapeHeadlines", (req, res) => {
+app.get("/scrape-headlines", (req, res) => {
   let newsUrl = 'http://www.skysports.com/world-cup';
 
   request(newsUrl, function (error, response, body) {
@@ -275,6 +275,11 @@ app.get("/scrapeHeadlines", (req, res) => {
       $('.news-list__headline').each(function(i, elm) {
         var obj = {};
         obj.headline = $(this).text().trim();
+        headlines[i] = obj;
+      });
+
+      $('.news-list__headline-link').each(function(i, elm) {
+        obj.link = $(this).attr('href');
         headlines[i] = obj;
       });
 
