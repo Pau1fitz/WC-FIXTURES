@@ -279,7 +279,7 @@ app.get("/scrape-headlines", (req, res) => {
       });
 
       $('.news-list__headline-link').each(function(i, elm) {
-        headlines[i].link = $(this).attr('href').replace(/[{}#]/g, "");
+        headlines[i].link = $(this).attr('href');
       });
 
       $('.news-list__snippet').each(function(i, elm) {
@@ -287,7 +287,7 @@ app.get("/scrape-headlines", (req, res) => {
       });
 
       $('.news-list__image').each(function(i, elm) {
-        headlines[i].image = $(this).attr('data-src');;
+        headlines[i].image = $(this).attr('data-src').replace(/[{}#]/g, "");
       });
 
       MongoClient.connect(url, function(err, db) {
