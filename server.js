@@ -279,7 +279,7 @@ app.get("/scrape-headlines", (req, res) => {
       });
 
       $('.news-list__headline-link').each(function(i, elm) {
-        headlines[i].link = $(this).attr('href').replace(/[{}#]/g, "");;
+        headlines[i].link = $(this).attr('href').replace(/[{}#]/g, "");
       });
 
       $('.news-list__snippet').each(function(i, elm) {
